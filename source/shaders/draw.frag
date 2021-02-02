@@ -1,12 +1,12 @@
 #pragma once
 
 inline constexpr char draw_frag[] = R"glsl(
-#version 330 core
+#version 430 core
 #line 5
 
-uniform float nu;
-
 in vec2 interpolated_texcoord;
+
+layout(binding = 0) uniform sampler2D ink;
 
 out vec4 color;
 
@@ -21,5 +21,5 @@ vec3 srgbGammaCompress(vec3 c)
 
 void main()
 {
-    color.xyz = vec3(nu, nu, nu);
+    color = texture(ink, interpolated_texcoord);
 })glsl";

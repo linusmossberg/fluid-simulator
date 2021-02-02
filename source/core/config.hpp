@@ -4,7 +4,7 @@ class Config
 {
 public:
     Config() : 
-        nu(0.5f, 0.1f, 1.0f),
+        nu(0.5f, 0.001f, 1000.0f),
         width(512.0f, 400.0f, 1000.0f),
         height(512.0f, 400.0f, 1000.0f)
     { }

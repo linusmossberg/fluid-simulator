@@ -1,9 +1,11 @@
 #pragma once
 
+#include <string>
+
 class Shader
 {
 public:
-    Shader(const char* vert_source, const char* frag_source);
+    Shader(const char* vert_source, const char* frag_source, std::string name = "");
 
     ~Shader();
 

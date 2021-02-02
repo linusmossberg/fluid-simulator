@@ -5,7 +5,7 @@
 
 #include <nanogui/opengl.h>
 
-Shader::Shader(const char* vert_source, const char* frag_source)
+Shader::Shader(const char* vert_source, const char* frag_source, std::string name)
 {
     int vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex_shader, 1, &vert_source, NULL);
@@ -17,7 +17,7 @@ Shader::Shader(const char* vert_source, const char* frag_source)
     if (!success)
     {
         glGetShaderInfoLog(vertex_shader, 512, NULL, infoLog);
-        throw std::runtime_error("Vertex shader error: " + std::string(infoLog));
+        throw std::runtime_error(name + " vertex shader error: " + std::string(infoLog));
     }
 
     int fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -28,7 +28,7 @@ Shader::Shader(const char* vert_source, const char* frag_source)
     if (!success)
     {
         glGetShaderInfoLog(fragment_shader, 512, NULL, infoLog);
-        throw std::runtime_error("Fragment shader error: " + std::string(infoLog));
+        throw std::runtime_error(name + " fragment shader error: " + std::string(infoLog));
     }
 
     handle = glCreateProgram();
@@ -40,7 +40,7 @@ Shader::Shader(const char* vert_source, const char* frag_source)
     if (!success)
     {
         glGetProgramInfoLog(handle, 512, NULL, infoLog);
-        throw std::runtime_error("Shader program error: " + std::string(infoLog));
+        throw std::runtime_error(name + " shader program error: " + std::string(infoLog));
     }
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);

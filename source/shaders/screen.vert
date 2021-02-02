@@ -1,7 +1,7 @@
 #pragma once
 
 inline constexpr char screen_vert[] = R"glsl(
-#version 330 core
+#version 430 core
 #line 5
 
 layout (location = 0) in vec2 position;

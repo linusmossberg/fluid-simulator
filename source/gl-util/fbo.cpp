@@ -2,6 +2,7 @@
 
 #include <exception>
 #include <stdexcept>
+#include <vector>
 
 #include <nanogui/opengl.h>
 
@@ -10,9 +11,12 @@ FBO::FBO(const glm::ivec2 &size) : size(size)
     glGenFramebuffers(1, &handle);
     glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
+    // initial state
+    std::vector<float> data(size.x * size.y * 4, 0.0f);
+
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size.x, size.y, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, size.x, size.y, 0, GL_RGBA, GL_FLOAT, data.data());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -58,7 +62,8 @@ void FBO::unBind()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void FBO::bindTexture()
+void FBO::bindTexture(int binding)
 {
+    glActiveTexture(GL_TEXTURE0 + binding);
     glBindTexture(GL_TEXTURE_2D, texture);
 }

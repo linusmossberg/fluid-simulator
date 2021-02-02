@@ -13,7 +13,7 @@ public:
 
     void unBind();
 
-    void bindTexture();
+    void bindTexture(int binding);
 
     unsigned int handle, texture;
     const glm::ivec2 size;
