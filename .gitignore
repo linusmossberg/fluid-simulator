@@ -1,0 +1,12 @@
+/*
+/*/
+!.gitignore
+!.gitmodules
+!README.md
+!LICENSE
+!CMakeLists.txt
+!blender-exporter.py
+!report.pdf
+!/source/
+!/lib/
+!/light-fields/
