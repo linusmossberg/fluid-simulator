@@ -1,12 +1,16 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 class Config
 {
 public:
     Config() : 
-        nu(0.5f, 0.001f, 1000.0f),
+        nu(0.5f, 0.0001f, 1000.0f),
         width(512.0f, 400.0f, 1000.0f),
-        height(512.0f, 400.0f, 1000.0f)
+        height(512.0f, 400.0f, 1000.0f),
+        F(0.1f, 0.0f, 100.0f),
+        F_angle(315.0f, 0.0f, 360.0f, glm::radians(1.0f))
     { }
 
     struct Property
@@ -43,4 +47,6 @@ public:
     Property nu;
     Property width;
     Property height;
+    Property F;
+    Property F_angle;
 };

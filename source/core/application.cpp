@@ -105,7 +105,9 @@ Application::Application() :
         }
     );
 
-    sliders.emplace_back(window, &cfg->nu, "nu", "a", 4);
+    sliders.emplace_back(window, &cfg->nu, "nu", "", 4);
+    sliders.emplace_back(window, &cfg->F, "Force", "N", 1);
+    sliders.emplace_back(window, &cfg->F_angle, "Force Angle", "", 0);
 
     perform_layout();
 }

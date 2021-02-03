@@ -7,15 +7,26 @@ inline constexpr char force_frag[] = R"glsl(
 uniform vec2 pos;
 layout(binding = 0) uniform sampler2D velocity;
 
+uniform vec2 force;
+uniform float dt;
+
 in vec2 interpolated_texcoord;
 
 out vec4 new_velocity;
 
 void main()
 {
-    vec2 dir = interpolated_texcoord - pos;
-    float falloff = exp(-dot(dir,dir) / 0.01);
-    vec2 v = texture(velocity, interpolated_texcoord).xy;
-    new_velocity.xy = v + normalize(dir) * falloff;
-    new_velocity.zw = vec2(0);
+    const float radius = 0.02;
+
+    new_velocity.xy = texture(velocity, interpolated_texcoord).xy;
+
+    if(distance(pos, interpolated_texcoord) < radius)
+    {
+        new_velocity.xy += dt * force;
+    }
+
+    // vec2 dir = interpolated_texcoord - pos;
+    // float falloff = exp(-dot(dir,dir) * 1e3);
+    // vec2 v = texture(velocity, interpolated_texcoord).xy;
+    // new_velocity.xy = v + normalize(dir) * falloff;
 })glsl";

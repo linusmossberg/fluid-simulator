@@ -6,13 +6,13 @@
 
 #include <nanogui/opengl.h>
 
-FBO::FBO(const glm::ivec2 &size) : size(size)
+FBO::FBO(const glm::ivec2 &size, float initial) : size(size)
 {
     glGenFramebuffers(1, &handle);
     glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
     // initial state
-    std::vector<float> data(size.x * size.y * 4, 0.0f);
+    std::vector<float> data(size.x * size.y * 4, initial);
 
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -39,27 +39,7 @@ FBO::~FBO()
 
 void FBO::bind()
 {
-    glGetIntegerv(GL_VIEWPORT, prev_viewport);
-    glViewport(0, 0, size.x, size.y);
-
-    glGetIntegerv(GL_SCISSOR_BOX, prev_scissor);
-    glScissor(0, 0, size.x, size.y);
-
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_STENCIL_TEST);
-
     glBindFramebuffer(GL_FRAMEBUFFER, handle);
-}
-
-void FBO::unBind()
-{
-    glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
-    glScissor(prev_scissor[0], prev_scissor[1], prev_scissor[2], prev_scissor[3]);
-
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_STENCIL_TEST);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void FBO::bindTexture(int binding)
