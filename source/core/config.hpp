@@ -6,11 +6,11 @@ class Config
 {
 public:
     Config() : 
-        nu(0.5f, 0.0001f, 1000.0f),
-        width(512.0f, 400.0f, 1000.0f),
-        height(512.0f, 400.0f, 1000.0f),
-        F(0.1f, 0.0f, 100.0f),
-        F_angle(315.0f, 0.0f, 360.0f, glm::radians(1.0f))
+        nu(0.0001f, 0.0001f, 1000.0f),
+        width(820.0f, 400.0f, 1000.0f),
+        height(640.0f, 400.0f, 1000.0f),
+        F(1.0f, 0.0f, 10.0f),
+        F_angle(0.0f, 0.0f, 360.0f, glm::radians(1.0f))
     { }
 
     struct Property

@@ -25,16 +25,26 @@ public:
 
     glm::ivec2 fb_size;
     glm::ivec2 simulation_size;
-    glm::vec2 mouse_pos = glm::vec2(0.0);
+    glm::vec2 mouse_pos = glm::vec2(0.05,0.5);
 
     double time;
     double last_time = std::numeric_limits<double>::max();
 
+    enum VisMode
+    {
+        INK,
+        STREAMLINES,
+        ARROWS
+    };
+
+    VisMode vis_mode = INK;
+
     float dt = 1.0f / 60.0f;
     float dx = 1.0f;
-    const size_t JACOBI_ITERATIONS = 50;
+    const size_t JACOBI_ITERATIONS = 25;
 
     bool mouse_active = false;
+    bool paused = false;
 
     // Used to prevent large relative movement the first click
     bool click = false;
@@ -47,23 +57,35 @@ private:
     void computePressure();
     void subtractPressureGradient();
     void updateInk();
+    void createStreamlines();
+
+    void enforceVelocityBoundary();
+    void enforcePressureBoundary();
 
     std::shared_ptr<Config> cfg;
     Shader draw_shader;
     Shader advect_shader;
     Shader force_shader;
-    Shader jacobi_shader;
+    Shader jacobi_diffusion_shader;
+    Shader jacobi_pressure_shader;
     Shader divergence_shader;
     Shader gradient_subtract_shader;
     Shader add_ink_shader;
+    Shader streamlines_shader;
+    Shader velocity_boundary_shader;
+    Shader pressure_boundary_shader;
     Quad quad;
 
     std::unique_ptr<FBO> velocity;
     std::unique_ptr<FBO> divergence;
     std::unique_ptr<FBO> pressure;
+    std::unique_ptr<FBO> boundary;
     std::unique_ptr<FBO> temp_fbo;
+
+    std::unique_ptr<FBO> noise;
     std::unique_ptr<FBO> ink;
-    std::unique_ptr<FBO> temp_ink;
+    std::unique_ptr<FBO> streamlines;
+    std::unique_ptr<FBO> temp_large;
 
     void saveRender();
     bool save_next = false;

@@ -18,6 +18,7 @@ ivec2 px = ivec2(gl_FragCoord.xy);
 void main()
 {
     vec2 v = texelFetch(velocity, px, 0).xy;
+
     vec2 pressure_gradient = half_inv_dx * vec2(p(1, 0) - p(-1, 0), p(0, 1) - p(0, -1));
     new_velocity.xy = v - pressure_gradient;
 })glsl";

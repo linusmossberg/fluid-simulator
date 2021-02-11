@@ -34,9 +34,11 @@ Application::Application() :
     b->set_tooltip("Save Screenshot");
     b->set_callback([this]
     {
+        fluid_simulator->paused = true;
         std::string path = nanogui::file_dialog({{"tga", ""}}, true);
         if (path.empty()) return;
         fluid_simulator->saveNextRender(path);
+        fluid_simulator->paused = false;
     });
 
     window = new nanogui::Window(this, "Menu");
@@ -68,25 +70,14 @@ Application::Application() :
         return desc_widget;
     };
 
-    addText("Light Field Renderer", "sans-bold", 24);
-    addText("github.com/linusmossberg/light-field-renderer", "sans", 16);
+    addText("Fluid Simulator", "sans-bold", 24);
+    addText("github.com/linusmossberg/fluid-simulator", "sans", 16);
     addText(" ");
 
-    addControl("W", "Move forward");
-    addControl("A", "Move left");
-    addControl("S", "Move back");
-    addControl("D", "Move right");
-    addControl("SPACE", "Move up");
-    addControl("CTRL", "Move down");
-    addControl("SCROLL", "Change focus distance");
-    addControl("SHIFT + CLICK", "Autofocus");
-    addControl("MOUSE DRAG", "Mouse mode");
+    addControl("MOUSE DRAG", "Move source");
 
     panel = new nanogui::Widget(window);
     panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill, 0, 5));
-
-    label = new nanogui::Label(panel, "Light Field", "sans-bold");
-    label->set_fixed_width(86);
 
     panel = new nanogui::Widget(window);
     panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 4, nanogui::Alignment::Fill));
@@ -108,6 +99,63 @@ Application::Application() :
     sliders.emplace_back(window, &cfg->nu, "nu", "", 4);
     sliders.emplace_back(window, &cfg->F, "Force", "N", 1);
     sliders.emplace_back(window, &cfg->F_angle, "Force Angle", "", 0);
+
+    new nanogui::Label(window, "Visualization", "sans-bold", 20);
+
+    panel = new nanogui::Widget(window);
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 4, nanogui::Alignment::Fill, 0, 5));
+
+    label = new nanogui::Label(panel, "Mode", "sans-bold");
+    label->set_fixed_width(86);
+
+    nanogui::Button* ink = new nanogui::Button(panel, "Ink", FA_STREET_VIEW);
+    ink->set_flags(nanogui::Button::Flags::ToggleButton);
+    ink->set_pushed(fluid_simulator->vis_mode == FluidSimulator::VisMode::INK);
+    ink->set_fixed_size({ 83, 20 });
+    ink->set_font_size(16);
+
+    nanogui::Button* streamlines = new nanogui::Button(panel, "Streamlines", FA_BULLSEYE);
+    streamlines->set_flags(nanogui::Button::Flags::ToggleButton);
+    streamlines->set_pushed(fluid_simulator->vis_mode == FluidSimulator::VisMode::STREAMLINES);
+    streamlines->set_fixed_size({ 83, 20 });
+    streamlines->set_font_size(16);
+
+    nanogui::Button* arrows = new nanogui::Button(panel, "Arrows", FA_BULLSEYE);
+    arrows->set_flags(nanogui::Button::Flags::ToggleButton);
+    arrows->set_pushed(fluid_simulator->vis_mode == FluidSimulator::VisMode::ARROWS);
+    arrows->set_fixed_size({ 83, 20 });
+    arrows->set_font_size(16);
+
+    ink->set_change_callback
+    (
+        [this, ink, streamlines, arrows](bool state)
+        {
+            fluid_simulator->vis_mode = FluidSimulator::VisMode::INK;
+            ink->set_pushed(true);
+            streamlines->set_pushed(false);
+            arrows->set_pushed(false);
+        }
+    );
+    streamlines->set_change_callback
+    (
+        [this, ink, streamlines, arrows](bool state)
+        {
+            fluid_simulator->vis_mode = FluidSimulator::VisMode::STREAMLINES;
+            ink->set_pushed(false);
+            streamlines->set_pushed(true);
+            arrows->set_pushed(false);
+        }
+    );
+    arrows->set_change_callback
+    (
+        [this, ink, streamlines, arrows](bool state)
+        {
+            fluid_simulator->vis_mode = FluidSimulator::VisMode::ARROWS;
+            ink->set_pushed(false);
+            streamlines->set_pushed(false);
+            arrows->set_pushed(true);
+        }
+    );
 
     perform_layout();
 }
