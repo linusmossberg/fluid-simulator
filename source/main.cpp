@@ -15,7 +15,7 @@ int main()
             app->dec_ref();
             app->draw_all();
             app->set_visible(true);
-            nanogui::mainloop(1.0f);
+            nanogui::mainloop(1000.0f / 60.0f);
         }
         nanogui::shutdown();
     }

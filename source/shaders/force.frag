@@ -16,14 +16,15 @@ out vec4 new_velocity;
 
 void main()
 {
-    const float radius = 0.02;
+    const float radius = 0.025;
 
     new_velocity.xy = texture(velocity, interpolated_texcoord).xy;
 
-    if(distance(pos, interpolated_texcoord) < radius)
-    {
-        new_velocity.xy += dt * force;
-    }
+    vec2 d = interpolated_texcoord - pos;
+
+    float falloff = 0.5 * exp(-dot(d, d) * 1e3);
+
+    new_velocity.xy += dt * falloff * force;
 
     // vec2 dir = interpolated_texcoord - pos;
     // float falloff = exp(-dot(dir,dir) * 1e3);

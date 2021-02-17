@@ -108,19 +108,19 @@ Application::Application() :
     label = new nanogui::Label(panel, "Mode", "sans-bold");
     label->set_fixed_width(86);
 
-    nanogui::Button* ink = new nanogui::Button(panel, "Ink", FA_STREET_VIEW);
+    nanogui::Button* ink = new nanogui::Button(panel, "Ink");
     ink->set_flags(nanogui::Button::Flags::ToggleButton);
     ink->set_pushed(fluid_simulator->vis_mode == FluidSimulator::VisMode::INK);
     ink->set_fixed_size({ 83, 20 });
     ink->set_font_size(16);
 
-    nanogui::Button* streamlines = new nanogui::Button(panel, "Streamlines", FA_BULLSEYE);
+    nanogui::Button* streamlines = new nanogui::Button(panel, "Streamlines");
     streamlines->set_flags(nanogui::Button::Flags::ToggleButton);
     streamlines->set_pushed(fluid_simulator->vis_mode == FluidSimulator::VisMode::STREAMLINES);
     streamlines->set_fixed_size({ 83, 20 });
     streamlines->set_font_size(16);
 
-    nanogui::Button* arrows = new nanogui::Button(panel, "Arrows", FA_BULLSEYE);
+    nanogui::Button* arrows = new nanogui::Button(panel, "Arrows");
     arrows->set_flags(nanogui::Button::Flags::ToggleButton);
     arrows->set_pushed(fluid_simulator->vis_mode == FluidSimulator::VisMode::ARROWS);
     arrows->set_fixed_size({ 83, 20 });

@@ -41,7 +41,7 @@ public:
 
     float dt = 1.0f / 60.0f;
     float dx = 1.0f;
-    const size_t JACOBI_ITERATIONS = 25;
+    const size_t JACOBI_ITERATIONS = 50;
 
     bool mouse_active = false;
     bool paused = false;

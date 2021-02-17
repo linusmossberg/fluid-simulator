@@ -49,8 +49,8 @@ void FluidSimulator::draw_contents()
 {
     time = glfwGetTime();
 
-    //if (time > last_time)
-    //    dt = time - last_time;
+    if (time > last_time)
+        dt = time - last_time;
 
     last_time = time;
 
@@ -96,6 +96,8 @@ void FluidSimulator::draw_contents()
         ink->bindTexture(0);
     else
         streamlines->bindTexture(0);
+
+    //boundary->bindTexture(1);
 
     quad.draw();
     
@@ -217,10 +219,11 @@ void FluidSimulator::updateInk()
     temp_large->bind();
     add_ink_shader.use();
     ink->bindTexture(0);
-    glm::vec3 color = glm::rgbColor(glm::vec3(std::fmod(time * 10.0, 360.0f), 0.6f, 0.75f + 0.25f * std::sin(0.5f * time)));
+    glm::vec3 color = glm::rgbColor(glm::vec3(std::fmod(time * 10.0, 360.0f), 0.6f, /*0.75f + 0.25f * */std::sin(0.5f * time)));
     glUniform3fv(add_ink_shader.getLocation("color"), 1, &color[0]);
     glUniform2fv(add_ink_shader.getLocation("pos"), 1, &mouse_pos[0]);
     glUniform1f(add_ink_shader.getLocation("time"), time);
+    glUniform1f(add_ink_shader.getLocation("dt"), dt);
     quad.draw();
     std::swap(ink, temp_large);
 
@@ -309,23 +312,30 @@ void FluidSimulator::resize()
     }
     fb_size = glm::ivec2(glm::vec2(fb_size) * screen()->pixel_ratio());
 
-    simulation_size = fb_size / 4;
+    simulation_size = fb_size / 2;
 
     temp_fbo = std::make_unique<FBO>(simulation_size);
     velocity = std::make_unique<FBO>(simulation_size);
     pressure = std::make_unique<FBO>(simulation_size);
     divergence = std::make_unique<FBO>(simulation_size);
 
-    ink = std::make_unique<FBO>(fb_size, 1.0f);
+    ink = std::make_unique<FBO>(fb_size, 0.5f);
     streamlines = std::make_unique<FBO>(fb_size);
     temp_large = std::make_unique<FBO>(fb_size);
 
     // Create initial boundary
     std::vector<glm::vec4> initial_boundary(simulation_size.x * simulation_size.y, glm::vec4(1.0f));
-    for (int x = 0; x < simulation_size.x; x++)
-        for (int y = 0; y < simulation_size.y; y++)
+    for (int y = 0; y < simulation_size.y; y++)
+    {
+        for (int x = 0; x < simulation_size.x; x++)
+        {
             if (x == 0 || x == simulation_size.x - 1 || y == 0 || y == simulation_size.y - 1)
-                initial_boundary[y * simulation_size.y + x] = glm::vec4(0.0f);
+            {
+                initial_boundary[y * (simulation_size.y - 1)  + x] = glm::vec4(0.0f);
+            }
+        }
+    }
+        
 
     boundary = std::make_unique<FBO>(simulation_size, 0.0f, initial_boundary.data());
 
