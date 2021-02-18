@@ -10,24 +10,17 @@ layout(binding = 0) uniform sampler2D velocity;
 uniform vec2 force;
 uniform float dt;
 
-in vec2 interpolated_texcoord;
+in vec2 TX_C;
 
 out vec4 new_velocity;
 
 void main()
 {
-    const float radius = 0.025;
+    new_velocity.xy = texture(velocity, TX_C).xy;
 
-    new_velocity.xy = texture(velocity, interpolated_texcoord).xy;
-
-    vec2 d = interpolated_texcoord - pos;
+    vec2 d = TX_C - pos;
 
     float falloff = 0.5 * exp(-dot(d, d) * 1e3);
 
     new_velocity.xy += dt * falloff * force;
-
-    // vec2 dir = interpolated_texcoord - pos;
-    // float falloff = exp(-dot(dir,dir) * 1e3);
-    // vec2 v = texture(velocity, interpolated_texcoord).xy;
-    // new_velocity.xy = v + normalize(dir) * falloff;
 })glsl";

@@ -13,12 +13,18 @@ out vec4 new_velocity;
 
 ivec2 px = ivec2(gl_FragCoord.xy);
 
-#define p(X, Y) texelFetch(pressure, px + ivec2(X, Y), 0).x
+in vec2 TX_C;
+in vec2 TX_L;
+in vec2 TX_R;
+in vec2 TX_T;
+in vec2 TX_B;
+
+#define p(TX) texture(pressure, TX).x
 
 void main()
 {
-    vec2 v = texelFetch(velocity, px, 0).xy;
+    vec2 v = texture(velocity, TX_C).xy;
+    vec2 pressure_gradient = half_inv_dx * vec2(p(TX_R) - p(TX_L), p(TX_T) - p(TX_B));
 
-    vec2 pressure_gradient = half_inv_dx * vec2(p(1, 0) - p(-1, 0), p(0, 1) - p(0, -1));
     new_velocity.xy = v - pressure_gradient;
 })glsl";

@@ -12,26 +12,16 @@ layout(binding = 1) uniform sampler2D divergence;
 
 out vec4 color;
 
-ivec2 px = ivec2(gl_FragCoord.xy);
+in vec2 TX_C;
+in vec2 TX_L;
+in vec2 TX_R;
+in vec2 TX_T;
+in vec2 TX_B;
 
-#define p(X, Y) texelFetch(pressure, px + ivec2(X, Y), 0)
+#define p(TX) texture(pressure, TX).x
 
 void main()
 {
-    float L = p(-1, 0).x;
-    float R = p(1, 0).x;
-    float B = p(0, -1).x;
-    float T = p(0, 1).x;
-
-    float C = p(0, 0).x;
-
-    ivec2 mx = textureSize(pressure, 0) - 1;
-
-    if(px.x <= 0) { L = C; }
-    if(px.x >= mx.x) { R = C; }
-    if(px.y <= 0) { B = C; }
-    if(px.y >= mx.y) { T = C; }
-
-    vec4 div = texelFetch(divergence, px, 0);
-    color = (L + R + B + T - dx2 * div) / 4.0;
+    vec4 div = texture(divergence, TX_C);
+    color = (p(TX_L) + p(TX_R) + p(TX_B) + p(TX_T) - dx2 * div) / 4.0;
 })glsl";

@@ -10,25 +10,28 @@ layout(binding = 0) uniform sampler2D velocity;
 
 out vec4 divergence;
 
-ivec2 px = ivec2(gl_FragCoord.xy);
+in vec2 TX_C;
+in vec2 TX_L;
+in vec2 TX_R;
+in vec2 TX_T;
+in vec2 TX_B;
 
-#define v(X, Y) texelFetch(velocity, px + ivec2(X, Y), 0)
+vec2 v(vec2 tx)
+{
+    vec2 vel = texture(velocity, tx).xy;
+
+    if(tx.x < 0.0 || tx.x > 1.0) vel.x = -vel.x;
+    if(tx.y < 0.0 || tx.y > 1.0) vel.y = -vel.y;
+
+    return vel;
+}
 
 void main()
 {
-    float L = v(-1, 0).x;
-    float R = v(1, 0).x;
-    float B = v(0, -1).y;
-    float T = v(0, 1).y;
-
-    vec2 C = v(0, 0).xy;
-
-    ivec2 mx = textureSize(velocity, 0) - 1;
-
-    if(px.x <= 0) { L = -C.x; }
-    if(px.x >= mx.x) { R = -C.x; }
-    if(px.y <= 0) { B = -C.y; }
-    if(px.y >= mx.y) { T = -C.y; }
+    float L = v(TX_L).x;
+    float R = v(TX_R).x;
+    float B = v(TX_B).y;
+    float T = v(TX_T).y;
 
     divergence.x = half_inv_dx * (R - L + T - B);
 })glsl";

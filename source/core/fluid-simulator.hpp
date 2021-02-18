@@ -25,6 +25,7 @@ public:
 
     glm::ivec2 fb_size;
     glm::ivec2 simulation_size;
+    glm::vec2 sim_tx_size;
     glm::vec2 mouse_pos = glm::vec2(0.05,0.5);
 
     double time;
@@ -59,9 +60,6 @@ private:
     void updateInk();
     void createStreamlines();
 
-    void enforceVelocityBoundary();
-    void enforcePressureBoundary();
-
     std::shared_ptr<Config> cfg;
     Shader draw_shader;
     Shader advect_shader;
@@ -72,14 +70,11 @@ private:
     Shader gradient_subtract_shader;
     Shader add_ink_shader;
     Shader streamlines_shader;
-    Shader velocity_boundary_shader;
-    Shader pressure_boundary_shader;
     Quad quad;
 
     std::unique_ptr<FBO> velocity;
     std::unique_ptr<FBO> divergence;
     std::unique_ptr<FBO> pressure;
-    std::unique_ptr<FBO> boundary;
     std::unique_ptr<FBO> temp_fbo;
 
     std::unique_ptr<FBO> noise;
