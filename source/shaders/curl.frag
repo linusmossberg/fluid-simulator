@@ -1,6 +1,6 @@
 #pragma once
 
-inline constexpr char divergence_frag[] = R"glsl(
+inline constexpr char curl_frag[] = R"glsl(
 #version 430 core
 #line 5
 
@@ -8,7 +8,7 @@ uniform float half_inv_dx;
 
 layout(binding = 0) uniform sampler2D velocity;
 
-out vec4 divergence;
+out vec4 curl;
 
 in vec2 TX_L;
 in vec2 TX_R;
@@ -27,5 +27,5 @@ vec2 v(vec2 tx)
 
 void main()
 {
-    divergence.x = half_inv_dx * (v(TX_R).x - v(TX_L).x + v(TX_T).y - v(TX_B).y);
+    curl.x = half_inv_dx * (v(TX_R).y - v(TX_L).y - v(TX_T).x + v(TX_B).x);
 })glsl";

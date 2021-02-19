@@ -17,10 +17,8 @@ out vec4 new_ink;
 
 void main()
 {
-	// 
-    //vec3 color = vec3(0.5 * (1.0 + sin(time * 0.1)), 0.5 * (1.0 + sin(time * 0.2)), 0.5 * (1.0 + sin(time * 0.3)));
     vec2 dir = TX_C - pos;
     float amount = 100.0 * dt * exp(-dot(dir,dir) * ((sin(time) + 1.2) * 1.2) * 1e5);
     vec4 old_ink = texture(ink, TX_C);
-    new_ink = (old_ink - amount * vec4(color, 1.0));
+    new_ink = (old_ink + amount * vec4(color, 1.0));
 })glsl";

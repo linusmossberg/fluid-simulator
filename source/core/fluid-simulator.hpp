@@ -54,6 +54,8 @@ private:
     void selfAdvectVelocity();
     void diffuseVelocity();
     void applyForce();
+    void computeCurl();
+    void applyVorticityConfinement();
     void computeDivergence();
     void computePressure();
     void subtractPressureGradient();
@@ -67,6 +69,8 @@ private:
     Shader jacobi_diffusion_shader;
     Shader jacobi_pressure_shader;
     Shader divergence_shader;
+    Shader curl_shader;
+    Shader vorticity_shader;
     Shader gradient_subtract_shader;
     Shader add_ink_shader;
     Shader streamlines_shader;
@@ -74,6 +78,7 @@ private:
 
     std::unique_ptr<FBO> velocity;
     std::unique_ptr<FBO> divergence;
+    std::unique_ptr<FBO> curl;
     std::unique_ptr<FBO> pressure;
     std::unique_ptr<FBO> temp_fbo;
 

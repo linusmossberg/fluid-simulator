@@ -14,9 +14,7 @@ in vec2 TX_C;
 out vec4 color;
 
 vec2 v(vec2 tx)
-{
-    tx += TX_C;
-    
+{    
     vec2 vel = texture(velocity, tx).xy;
 
     if(tx.x < 0.0 || tx.x > 1.0) vel.x = -vel.x;
@@ -25,13 +23,13 @@ vec2 v(vec2 tx)
     return vel;
 }
 
-vec2 RK4(float dt, vec2 x0, float scale)
+vec2 RK4(float dt, vec2 x)
 {
-    vec2 k1 = inv_dx * texture(velocity, x0).xy;
-    vec2 k2 = inv_dx * v(scale * 0.5 * k1 * dt);
-    vec2 k3 = inv_dx * v(scale * 0.5 * k2 * dt);
-    vec2 k4 = inv_dx * v(scale * k3 * dt);
-    return x0 + scale * dt * (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
+    vec2 k1 = inv_dx * texture(velocity, x).xy;
+    vec2 k2 = inv_dx * v(x + 0.5 * k1 * dt);
+    vec2 k3 = inv_dx * v(x + 0.5 * k2 * dt);
+    vec2 k4 = inv_dx * v(x + k3 * dt);
+    return x + dt * (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
 }
 
 void main()
@@ -40,23 +38,25 @@ void main()
     const float trace_time = 0.25;
     const float dt = trace_time / N;
 
-    vec2 x0 = TX_C;
-    float avg_noise_back = 0.0;
+    float avg_noise = texture(noise, TX_C).x;
+
+    // Forward integrate
+    vec2 x = TX_C;
     for(int i = 0; i < N; i++)
     {
-        avg_noise_back += texture(noise, x0).x;
-        x0 = RK4(dt, x0, -1.0);
+        x = RK4(dt, x);
+        avg_noise += texture(noise, x).x;
     }
-    avg_noise_back /= N;
 
-    x0 = TX_C;
-    float avg_noise_forward = 0.0;
+    // Backward integrate
+    x = TX_C;
     for(int i = 0; i < N; i++)
     {
-        x0 = RK4(dt, x0, 1.0);
-        avg_noise_forward += texture(noise, x0).x;
+        x = RK4(-dt, x);
+        avg_noise += texture(noise, x).x;
     }
-    avg_noise_forward /= N;
 
-    color = vec4((((avg_noise_back + avg_noise_forward) * 0.5 - 0.5) * 4.0) + 0.5);
+    avg_noise /= (2.0 * N + 1);
+
+    color = vec4(((avg_noise - 0.5) * 4.0) + 0.5);
 })glsl";

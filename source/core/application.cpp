@@ -96,7 +96,8 @@ Application::Application() :
         }
     );
 
-    sliders.emplace_back(window, &cfg->nu, "nu", "", 4);
+    sliders.emplace_back(window, &cfg->nu, "Nu", "", 4);
+    sliders.emplace_back(window, &cfg->vorticity, "Vorticity", "", 1);
     sliders.emplace_back(window, &cfg->F, "Force", "N", 1);
     sliders.emplace_back(window, &cfg->F_angle, "Force Angle", "", 0);
 

@@ -16,8 +16,6 @@ out vec4 color;
 
 vec2 v(vec2 tx)
 {
-    tx += TX_C;
-
     vec2 vel = texture(velocity, tx).xy;
 
     if(tx.x < 0.0 || tx.x > 1.0) vel.x = -vel.x;
@@ -29,9 +27,9 @@ vec2 v(vec2 tx)
 vec2 RK4()
 {
     vec2 k1 = inv_dx * texture(velocity, TX_C).xy;
-    vec2 k2 = inv_dx * v(-0.5 * k1 * dt);
-    vec2 k3 = inv_dx * v(-0.5 * k2 * dt);
-    vec2 k4 = inv_dx * v(-k3 * dt);
+    vec2 k2 = inv_dx * v(TX_C - 0.5 * k1 * dt);
+    vec2 k3 = inv_dx * v(TX_C - 0.5 * k2 * dt);
+    vec2 k4 = inv_dx * v(TX_C - k3 * dt);
     return dt * (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
 }
 

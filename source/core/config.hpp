@@ -6,7 +6,8 @@ class Config
 {
 public:
     Config() : 
-        nu(0.0001f, 0.0001f, 1000.0f),
+        nu(1e-4f, 1e-4f, 1000.0f),
+        vorticity(0.0f, 0.0f, 20.0f),
         width(820.0f, 400.0f, 1000.0f),
         height(640.0f, 400.0f, 1000.0f),
         F(1.0f, 0.0f, 100.0f),
@@ -45,6 +46,7 @@ public:
     };
 
     Property nu;
+    Property vorticity;
     Property width;
     Property height;
     Property F;
