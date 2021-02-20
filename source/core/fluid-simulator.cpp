@@ -47,9 +47,11 @@ FluidSimulator::FluidSimulator(Widget* parent, const std::shared_ptr<Config> &cf
 
 void FluidSimulator::draw_contents()
 {
-    time = glfwGetTime();
+    double time = glfwGetTime();
 
     //if (time > last_time) dt = time - last_time;
+
+    sim_time += dt;
 
     last_time = time;
 
@@ -124,6 +126,8 @@ void FluidSimulator::selfAdvectVelocity()
 
 void FluidSimulator::diffuseVelocity()
 {
+    if (cfg->nu < 1e-6f) return;
+
     jacobi_diffusion_shader.use();
 
     float dx2_nudt = std::powf(dx, 2) / ((float)cfg->nu * dt);
@@ -182,6 +186,8 @@ void FluidSimulator::computeCurl()
 
 void FluidSimulator::applyVorticityConfinement()
 {
+    if (cfg->vorticity < 1e-6f) return;
+
     temp_fbo->bind();
 
     vorticity_shader.use();
@@ -257,15 +263,11 @@ void FluidSimulator::updateInk()
     temp_large->bind();
     add_ink_shader.use();
     ink->bindTexture(0);
-    //glm::vec3 color = glm::rgbColor(glm::vec3(std::fmod(time * 10.0, 360.0f), 0.6f, /*0.75f + 0.25f * */std::sin(0.5f * time)));
-    //glm::vec3 color = glm::rgbColor(glm::vec3(std::fmod(time * 10.0, 360.0f), 0.5f, 1.0));
-    static float time_ = 0.0;
-    time_ += dt;
-    glm::vec3 color = glm::rgbColor(glm::vec3(std::fmod(40.0f + time_, 360.0f), 0.5f, std::cosf(time_ * 0.05f)));
+    glm::vec3 color = glm::rgbColor(glm::vec3(std::fmod(sim_time * 10.0f, 360.0f), 0.5f, 10.0f * -std::cosf(sim_time * 0.05f)));
     glUniform2fv(add_ink_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
     glUniform3fv(add_ink_shader.getLocation("color"), 1, &color[0]);
     glUniform2fv(add_ink_shader.getLocation("pos"), 1, &mouse_pos[0]);
-    glUniform1f(add_ink_shader.getLocation("time"), time_);
+    glUniform1f(add_ink_shader.getLocation("time"), sim_time);
     glUniform1f(add_ink_shader.getLocation("dt"), dt);
     quad.draw();
     std::swap(ink, temp_large);
@@ -340,7 +342,7 @@ void FluidSimulator::resize()
 
     //std::vector<glm::vec4> ink_d(fb_size.x * fb_size.y, glm::vec4(glm::rgbColor(glm::vec3(200.0f, 0.5f, 0.5f)), 1.0));
     //ink = std::make_unique<FBO>(fb_size, 0.5f, ink_d.data());
-    ink = std::make_unique<FBO>(fb_size, 0.5f);
+    ink = std::make_unique<FBO>(fb_size, 0.75f);
     streamlines = std::make_unique<FBO>(fb_size);
     temp_large = std::make_unique<FBO>(fb_size);
 

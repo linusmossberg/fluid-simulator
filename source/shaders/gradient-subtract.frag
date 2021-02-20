@@ -11,8 +11,6 @@ layout(binding = 1) uniform sampler2D velocity;
 
 out vec4 new_velocity;
 
-ivec2 px = ivec2(gl_FragCoord.xy);
-
 in vec2 TX_C;
 in vec2 TX_L;
 in vec2 TX_R;

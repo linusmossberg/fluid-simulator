@@ -28,8 +28,9 @@ public:
     glm::vec2 sim_tx_size;
     glm::vec2 mouse_pos = glm::vec2(0.05,0.5);
 
-    double time;
     double last_time = std::numeric_limits<double>::max();
+
+    float sim_time = 0.0f;
 
     enum VisMode
     {

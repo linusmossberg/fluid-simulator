@@ -24,7 +24,7 @@ in vec2 TX_B;
 void main()
 {
     vec2 force = half_inv_dx * vec2(abs(c(TX_T)) - abs(c(TX_B)), abs(c(TX_R)) - abs(c(TX_L)));
-    float length2 = max(1e-4, dot(force, force));
+    float length2 = max(1e-6, dot(force, force));
     force *= inversesqrt(length2) * vorticity_scale * c(TX_C) * vec2(1, -1);
     new_velocity.xy = texture(velocity, TX_C).xy + force * dt;
 })glsl";
