@@ -37,5 +37,6 @@ void main()
 {
     // Backward integrate to previous position using Runge-Kutta 4
     vec2 x = TX_C - RK4();
-    color = texture(quantity, clamp(x, vec2(0.0), vec2(1.0)));
+    //color = texture(quantity, clamp(x, vec2(0.0), vec2(1.0)));
+    color = texture(quantity, x);
 })glsl";

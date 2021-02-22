@@ -5,6 +5,7 @@
 #include <nanogui/opengl.h>
 
 #include "fluid-simulator.hpp"
+#include "color-maps.hpp"
 
 Application::Application() : 
     Screen(nanogui::Vector2i(1280, 720), "fluid-simulator", true, false, false, false, false, 4U, 3U), 
@@ -96,10 +97,40 @@ Application::Application() :
         }
     );
 
-    sliders.emplace_back(window, &cfg->nu, "Nu", "", 4);
-    sliders.emplace_back(window, &cfg->vorticity, "Vorticity", "", 1);
-    sliders.emplace_back(window, &cfg->F, "Force", "N", 1);
+    panel = new nanogui::Widget(window);
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 3, nanogui::Alignment::Fill));
+    label = new nanogui::Label(panel, "Time Step", "sans-bold");
+    label->set_fixed_width(86);
+
+    float_box_rows.push_back(PropertyBoxRow(panel, { &cfg->dt }, "", "s", 4, 0.001f, "", 135));
+
+    b = new nanogui::Button(panel, "Real Time");
+    b->set_flags(nanogui::Button::Flags::ToggleButton);
+    b->set_pushed(!fluid_simulator->fixed_dt);
+    b->set_fixed_size({ 145, 20 });
+    b->set_font_size(16);
+    b->set_change_callback([this](bool state) { fluid_simulator->fixed_dt = !state; });
+
+    sliders.emplace_back(window, &cfg->mu, "Viscosity", "cP", 2);
+    sliders.emplace_back(window, &cfg->rho, "Density", "kg/L", 2);
+    sliders.emplace_back(window, &cfg->vorticity, "Vorticity", "N", 2);
+    sliders.emplace_back(window, &cfg->sim_width, "Domain Width", "m", 1);
+    sliders.emplace_back(window, &cfg->F, "Force", "N", 2);
     sliders.emplace_back(window, &cfg->F_angle, "Force Angle", "", 0);
+    sliders.emplace_back(window, &cfg->pressure_iterations, "Pressure Steps", "", 0);
+    sliders.emplace_back(window, &cfg->viscosity_iterations, "Visc. Steps", "", 0);
+
+    panel = new nanogui::Widget(window);
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill));
+    label = new nanogui::Label(panel, "Options", "sans-bold");
+    label->set_fixed_width(86);
+
+    b = new nanogui::Button(panel, "Clear Pressure");
+    b->set_flags(nanogui::Button::Flags::ToggleButton);
+    b->set_pushed(fluid_simulator->fluid_solver.clear_pressure);
+    b->set_fixed_size({ 190, 20 });
+    b->set_font_size(16);
+    b->set_change_callback([this](bool state) { fluid_simulator->fluid_solver.clear_pressure = state; });
 
     new nanogui::Label(window, "Visualization", "sans-bold", 20);
 
@@ -127,36 +158,137 @@ Application::Application() :
     arrows->set_fixed_size({ 83, 20 });
     arrows->set_font_size(16);
 
+    panel = new nanogui::Widget(window);
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 4, nanogui::Alignment::Fill, 0, 5));
+
+    label = new nanogui::Label(panel, "", "sans-bold");
+    label->set_fixed_width(86);
+
+    nanogui::Button* curl = new nanogui::Button(panel, "Curl");
+    curl->set_flags(nanogui::Button::Flags::ToggleButton);
+    curl->set_pushed(fluid_simulator->vis_mode == FluidSimulator::VisMode::CURL);
+    curl->set_fixed_size({ 83, 20 });
+    curl->set_font_size(16);
+
+    nanogui::Button* pressure = new nanogui::Button(panel, "Pressure");
+    pressure->set_flags(nanogui::Button::Flags::ToggleButton);
+    pressure->set_pushed(fluid_simulator->vis_mode == FluidSimulator::VisMode::PRESSURE);
+    pressure->set_fixed_size({ 83, 20 });
+    pressure->set_font_size(16);
+
+    nanogui::Button* speed = new nanogui::Button(panel, "Speed");
+    speed->set_flags(nanogui::Button::Flags::ToggleButton);
+    speed->set_pushed(fluid_simulator->vis_mode == FluidSimulator::VisMode::SPEED);
+    speed->set_fixed_size({ 83, 20 });
+    speed->set_font_size(16);
+
     ink->set_change_callback
     (
-        [this, ink, streamlines, arrows](bool state)
+        [this, ink, streamlines, arrows, curl, pressure, speed](bool state)
         {
             fluid_simulator->vis_mode = FluidSimulator::VisMode::INK;
             ink->set_pushed(true);
             streamlines->set_pushed(false);
             arrows->set_pushed(false);
+            curl->set_pushed(false);
+            pressure->set_pushed(false);
+            speed->set_pushed(false);
         }
     );
     streamlines->set_change_callback
     (
-        [this, ink, streamlines, arrows](bool state)
+        [this, ink, streamlines, arrows, curl, pressure, speed](bool state)
         {
             fluid_simulator->vis_mode = FluidSimulator::VisMode::STREAMLINES;
             ink->set_pushed(false);
             streamlines->set_pushed(true);
             arrows->set_pushed(false);
+            curl->set_pushed(false);
+            pressure->set_pushed(false);
+            speed->set_pushed(false);
         }
     );
     arrows->set_change_callback
     (
-        [this, ink, streamlines, arrows](bool state)
+        [this, ink, streamlines, arrows, curl, pressure, speed](bool state)
         {
             fluid_simulator->vis_mode = FluidSimulator::VisMode::ARROWS;
             ink->set_pushed(false);
             streamlines->set_pushed(false);
             arrows->set_pushed(true);
+            curl->set_pushed(false);
+            pressure->set_pushed(false);
+            speed->set_pushed(false);
         }
     );
+    curl->set_change_callback
+    (
+        [this, ink, streamlines, arrows, curl, pressure, speed](bool state)
+        {
+            fluid_simulator->vis_mode = FluidSimulator::VisMode::CURL;
+            ink->set_pushed(false);
+            streamlines->set_pushed(false);
+            arrows->set_pushed(false);
+            curl->set_pushed(true);
+            pressure->set_pushed(false);
+            speed->set_pushed(false);
+        }
+    );
+    pressure->set_change_callback
+    (
+        [this, ink, streamlines, arrows, curl, pressure, speed](bool state)
+        {
+            fluid_simulator->vis_mode = FluidSimulator::VisMode::PRESSURE;
+            ink->set_pushed(false);
+            streamlines->set_pushed(false);
+            arrows->set_pushed(false);
+            curl->set_pushed(false);
+            pressure->set_pushed(true);
+            speed->set_pushed(false);
+        }
+    );
+    speed->set_change_callback
+    (
+        [this, ink, streamlines, arrows, curl, pressure, speed](bool state)
+        {
+            fluid_simulator->vis_mode = FluidSimulator::VisMode::SPEED;
+            ink->set_pushed(false);
+            streamlines->set_pushed(false);
+            arrows->set_pushed(false);
+            curl->set_pushed(false);
+            pressure->set_pushed(false);
+            speed->set_pushed(true);
+        }
+    );
+
+    panel = new nanogui::Widget(window);
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill, 0, 5));
+
+    label = new nanogui::Label(panel, "Color Map", "sans-bold");
+    label->set_fixed_width(86);
+
+    auto* color_maps = new nanogui::ComboBox(panel, ColorMap::color_map_strings);
+    color_maps->set_fixed_size({ 260, 20 });
+    color_maps->set_callback([this](int index) { fluid_simulator->setColorMap(index); });
+    color_maps->set_font_size(16);
+    for (const auto& c : color_maps->popup()->children())
+    {
+        c->set_font_size(color_maps->font_size());
+    }
+
+    panel = new nanogui::Widget(window);
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 4, nanogui::Alignment::Fill));
+    label = new nanogui::Label(panel, "Range", "sans-bold");
+    label->set_fixed_width(86);
+
+    float_box_rows.push_back(PropertyBoxRow(panel, { &cfg->range_min, &cfg->range_max }, "", "", 7, 0.01f, "", 180));
+
+    b = new nanogui::Button(panel, "Auto Set");
+    b->set_flags(nanogui::Button::Flags::ToggleButton);
+    b->set_pushed(fluid_simulator->auto_set_range);
+    b->set_fixed_size({ 73, 20 });
+    b->set_font_size(16);
+    b->set_change_callback([this](bool state) { fluid_simulator->auto_set_range = state; });
 
     perform_layout();
 }

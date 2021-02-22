@@ -53,16 +53,17 @@ Shader::~Shader()
     glDeleteProgram(handle);
 }
 
-int Shader::getLocation(const char* name)
+#include <iostream>
+int Shader::getLocation(const char* name) const
 {
     GLint loc = glGetUniformLocation(handle, name);
 
-    //if (loc < 0) std::cout << name << " uniform location not found.\n";
+    if (loc < 0) std::cout << name << " uniform location not found.\n";
 
     return loc;
 }
 
-void Shader::use()
+void Shader::use() const
 {
     glUseProgram(handle);
 }

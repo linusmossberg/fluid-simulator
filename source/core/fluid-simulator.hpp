@@ -4,8 +4,10 @@
 
 #include <glm/glm.hpp>
 
-#include "../gl-util/shader.hpp"
 #include "../gl-util/quad.hpp"
+#include "../gl-util/texture-1d.hpp"
+
+#include "fluid-solver.hpp"
 
 class FBO;
 class Config;
@@ -17,16 +19,20 @@ public:
 
     virtual void draw_contents() override;
 
+    void setColorMap(int index);
+
     void resize();
     void saveNextRender(const std::string& filename);
 
     virtual bool mouse_drag_event(const nanogui::Vector2i& p, const nanogui::Vector2i& rel, int button, int modifiers) override;
     virtual bool mouse_button_event(const nanogui::Vector2i &p, int button, bool down, int modifiers) override;
 
+    FluidSolver fluid_solver;
+
     glm::ivec2 fb_size;
-    glm::ivec2 simulation_size;
-    glm::vec2 sim_tx_size;
     glm::vec2 mouse_pos = glm::vec2(0.05,0.5);
+
+    bool auto_set_range = true;
 
     double last_time = std::numeric_limits<double>::max();
 
@@ -36,14 +42,15 @@ public:
     {
         INK,
         STREAMLINES,
-        ARROWS
+        ARROWS,
+        CURL,
+        PRESSURE,
+        SPEED
     };
 
     VisMode vis_mode = INK;
 
-    float dt = 1.0f / 60.0f;
-    float dx = 1.0f;
-    const size_t JACOBI_ITERATIONS = 50;
+    bool fixed_dt = true;
 
     bool mouse_active = false;
     bool paused = false;
@@ -52,41 +59,21 @@ public:
     bool click = false;
 
 private:
-    void selfAdvectVelocity();
-    void diffuseVelocity();
-    void applyForce();
-    void computeCurl();
-    void applyVorticityConfinement();
-    void computeDivergence();
-    void computePressure();
-    void subtractPressureGradient();
     void updateInk();
     void createStreamlines();
+    void drawColorMap(const std::unique_ptr<FBO>& scalar_field);
+    void setColorMapRange();
 
     std::shared_ptr<Config> cfg;
-    Shader draw_shader;
-    Shader advect_shader;
-    Shader force_shader;
-    Shader jacobi_diffusion_shader;
-    Shader jacobi_pressure_shader;
-    Shader divergence_shader;
-    Shader curl_shader;
-    Shader vorticity_shader;
-    Shader gradient_subtract_shader;
-    Shader add_ink_shader;
-    Shader streamlines_shader;
-    Quad quad;
 
-    std::unique_ptr<FBO> velocity;
-    std::unique_ptr<FBO> divergence;
-    std::unique_ptr<FBO> curl;
-    std::unique_ptr<FBO> pressure;
-    std::unique_ptr<FBO> temp_fbo;
+    Quad quad;
 
     std::unique_ptr<FBO> noise;
     std::unique_ptr<FBO> ink;
     std::unique_ptr<FBO> streamlines;
-    std::unique_ptr<FBO> temp_large;
+    std::unique_ptr<FBO> temp_fbo;
+
+    Texture1D transfer_function;
 
     void saveRender();
     bool save_next = false;

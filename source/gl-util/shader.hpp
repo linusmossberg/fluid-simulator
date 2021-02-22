@@ -9,9 +9,9 @@ public:
 
     ~Shader();
 
-    int getLocation(const char* name);
+    int getLocation(const char* name) const;
 
-    void use();
+    void use() const;
 
     int handle;
 };

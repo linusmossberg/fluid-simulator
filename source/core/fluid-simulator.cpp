@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <random>
 
 #include <nanogui/nanogui.h>
 
@@ -14,33 +15,21 @@
 #include "../shaders/screen.vert"
 #include "../shaders/draw.frag"
 #include "../shaders/advect.frag"
-#include "../shaders/force.frag"
-#include "../shaders/jacobi-diffusion.frag"
-#include "../shaders/jacobi-pressure.frag"
-#include "../shaders/divergence.frag"
-#include "../shaders/curl.frag"
-#include "../shaders/vorticity.frag"
-#include "../shaders/gradient-subtract.frag"
 #include "../shaders/add-ink.frag"
 #include "../shaders/streamlines.frag"
 
+#include "../shaders/visualization/color-map.frag"
+
+#include "color-maps.hpp"
+
 #include "config.hpp"
 #include "../gl-util/fbo.hpp"
+#include "../gl-util/shader.hpp"
 #include "util.hpp"
 
-FluidSimulator::FluidSimulator(Widget* parent, const std::shared_ptr<Config> &cfg) : 
-    Canvas(parent, 1, false), quad(), cfg(cfg),
-    draw_shader(screen_vert, draw_frag, "draw"),
-    advect_shader(screen_vert, advect_frag, "advect"),
-    force_shader(screen_vert, force_frag, "force"),
-    jacobi_diffusion_shader(screen_vert, jacobi_diffusion_frag, "jacobi-diffusion"),
-    jacobi_pressure_shader(screen_vert, jacobi_pressure_frag, "jacobi-pressure"),
-    divergence_shader(screen_vert, divergence_frag, "divergence"),
-    curl_shader(screen_vert, curl_frag, "curl"),
-    vorticity_shader(screen_vert, vorticity_frag, "vorticity"),
-    gradient_subtract_shader(screen_vert, gradient_subtract_frag, "gradient"),
-    add_ink_shader(screen_vert, add_ink_frag, "ink"),
-    streamlines_shader(screen_vert, streamlines_frag, "streamlines")
+FluidSimulator::FluidSimulator(Widget* parent, const std::shared_ptr<Config>& cfg) :
+    Canvas(parent, 1, false), quad(), cfg(cfg), fluid_solver(cfg),
+    transfer_function(ColorMap::color_maps[0])
 {
     resize();
 }
@@ -49,9 +38,9 @@ void FluidSimulator::draw_contents()
 {
     double time = glfwGetTime();
 
-    //if (time > last_time) dt = time - last_time;
+    if (!fixed_dt && time > last_time) cfg->dt = float(time - last_time);
 
-    sim_time += dt;
+    sim_time += cfg->dt;
 
     last_time = time;
 
@@ -62,242 +51,152 @@ void FluidSimulator::draw_contents()
 
     int prev_viewport[4];
     glGetIntegerv(GL_VIEWPORT, prev_viewport);
-    glViewport(0, 0, simulation_size.x, simulation_size.y);
 
     int prev_scissor[4];
     glGetIntegerv(GL_SCISSOR_BOX, prev_scissor);
-    glScissor(0, 0, simulation_size.x, simulation_size.y);
+
+    fluid_solver.force_pos = mouse_pos;
+    fluid_solver.step();
 
     quad.bind();
-
-    applyForce();
-    selfAdvectVelocity();
-    computeCurl();
-    applyVorticityConfinement();
-    diffuseVelocity();
-    computeDivergence();
-    computePressure();
-    subtractPressureGradient();
 
     glViewport(0, 0, fb_size.x, fb_size.y);
     glScissor(0, 0, fb_size.x, fb_size.y);
 
     if (vis_mode == INK)
         updateInk();
-    else
+    else if (vis_mode == STREAMLINES)
         createStreamlines();
+
+    setColorMapRange();
 
     glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
     glScissor(prev_scissor[0], prev_scissor[1], prev_scissor[2], prev_scissor[3]);
 
+    static const Shader draw_shader(screen_vert, draw_frag, "draw");
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    draw_shader.use();
-
-    glUniform2fv(draw_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-
     if (vis_mode == INK)
+    {
+        draw_shader.use();
         ink->bindTexture(0);
+        quad.draw();
+    }
+    else if (vis_mode == STREAMLINES)
+    {
+        drawColorMap(streamlines);
+    }
+    else if (vis_mode == CURL)
+    {
+        drawColorMap(fluid_solver.curl);
+    }
+    else if(vis_mode == PRESSURE)
+    {
+        drawColorMap(fluid_solver.pressure);
+    }
     else
-        streamlines->bindTexture(0);
-
-    quad.draw();
+    {
+        drawColorMap(fluid_solver.speed);
+    }
     
     if (save_next) saveRender();
 }
 
-void FluidSimulator::selfAdvectVelocity()
-{
-    temp_fbo->bind();
-
-    advect_shader.use();
-
-    glUniform2fv(advect_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform1f(advect_shader.getLocation("inv_dx"), 1.0f / dx);
-    glUniform1f(advect_shader.getLocation("dt"), dt);
-
-    velocity->bindTexture(0, GL_LINEAR);
-    velocity->bindTexture(1, GL_LINEAR);
-
-    quad.draw();
-
-    std::swap(velocity, temp_fbo);
-}
-
-void FluidSimulator::diffuseVelocity()
-{
-    if (cfg->nu < 1e-6f) return;
-
-    jacobi_diffusion_shader.use();
-
-    float dx2_nudt = std::powf(dx, 2) / ((float)cfg->nu * dt);
-
-    glUniform2fv(jacobi_diffusion_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform1f(jacobi_diffusion_shader.getLocation("dx2_nudt"), dx2_nudt);
-
-    velocity->bindTexture(1);
-
-    for (int i = 0; i < JACOBI_ITERATIONS; i++)
-    {
-        temp_fbo->bind();
-
-        velocity->bindTexture(0);
-
-        quad.draw();
-
-        std::swap(velocity, temp_fbo);
-    }
-    std::swap(velocity, temp_fbo);
-}
-
-void FluidSimulator::applyForce()
-{
-    temp_fbo->bind();
-
-    force_shader.use();
-
-    velocity->bindTexture(0);
-
-    glm::vec2 force = (float)cfg->F * glm::vec2(std::cos(cfg->F_angle), std::sin(cfg->F_angle));
-
-    glUniform2fv(force_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform2fv(force_shader.getLocation("pos"), 1, &mouse_pos[0]);
-    glUniform2fv(force_shader.getLocation("force"), 1, &force[0]);
-    glUniform1f(force_shader.getLocation("dt"), dt);
-
-    quad.draw();
-
-    std::swap(velocity, temp_fbo);
-}
-
-void FluidSimulator::computeCurl()
-{
-    curl->bind();
-
-    curl_shader.use();
-
-    velocity->bindTexture(0);
-
-    glUniform2fv(curl_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform1f(curl_shader.getLocation("half_inv_dx"), 0.5f / dx);
-
-    quad.draw();
-}
-
-void FluidSimulator::applyVorticityConfinement()
-{
-    if (cfg->vorticity < 1e-6f) return;
-
-    temp_fbo->bind();
-
-    vorticity_shader.use();
-
-    velocity->bindTexture(0);
-    curl->bindTexture(1);
-
-    glUniform2fv(vorticity_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform1f(vorticity_shader.getLocation("half_inv_dx"), 0.5f / dx);
-    glUniform1f(vorticity_shader.getLocation("dt"), dt);
-    glUniform1f(vorticity_shader.getLocation("vorticity_scale"), cfg->vorticity);
-
-    quad.draw();
-
-    std::swap(temp_fbo, velocity);
-}
-
-void FluidSimulator::computeDivergence()
-{
-    divergence->bind();
-
-    divergence_shader.use();
-
-    velocity->bindTexture(0);
-
-    glUniform2fv(divergence_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform1f(divergence_shader.getLocation("half_inv_dx"), 0.5f / dx);
-
-    quad.draw();
-}
-
-void FluidSimulator::computePressure()
-{
-    jacobi_pressure_shader.use();
-
-    glUniform2fv(jacobi_pressure_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform1f(jacobi_pressure_shader.getLocation("dx2"), std::pow(dx, 2));
-
-    divergence->bindTexture(1);
-
-    for (int i = 0; i < JACOBI_ITERATIONS; i++)
-    {
-        temp_fbo->bind();
-
-        pressure->bindTexture(0);        
-
-        quad.draw();
-
-        std::swap(temp_fbo, pressure);
-    }
-    std::swap(temp_fbo, pressure);
-}
-
-void FluidSimulator::subtractPressureGradient()
-{
-    temp_fbo->bind();
-
-    gradient_subtract_shader.use();
-
-    pressure->bindTexture(0);
-    velocity->bindTexture(1);
-
-    glUniform2fv(gradient_subtract_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform1f(gradient_subtract_shader.getLocation("half_inv_dx"), 0.5f / dx);
-
-    quad.draw();
-
-    std::swap(temp_fbo, velocity);
-}
-
 void FluidSimulator::updateInk()
 {
-    temp_large->bind();
-    add_ink_shader.use();
-    ink->bindTexture(0);
-    glm::vec3 color = glm::rgbColor(glm::vec3(std::fmod(sim_time * 10.0f, 360.0f), 0.5f, 10.0f * -std::cosf(sim_time * 0.05f)));
-    glUniform2fv(add_ink_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform3fv(add_ink_shader.getLocation("color"), 1, &color[0]);
-    glUniform2fv(add_ink_shader.getLocation("pos"), 1, &mouse_pos[0]);
-    glUniform1f(add_ink_shader.getLocation("time"), sim_time);
-    glUniform1f(add_ink_shader.getLocation("dt"), dt);
-    quad.draw();
-    std::swap(ink, temp_large);
+    static const Shader add_ink_shader(screen_vert, add_ink_frag, "ink");
 
-    temp_large->bind();
-    advect_shader.use();
-    glUniform2fv(advect_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform1f(advect_shader.getLocation("inv_dx"), 1.0f / dx);
-    glUniform1f(advect_shader.getLocation("dt"), dt);
+    // Add ink
+    {
+        temp_fbo->bind();
+        add_ink_shader.use();
+        ink->bindTexture(0);
+        float scale = ((std::cosf(sim_time) * 0.5f) + 1.0f) * 500.0f;
+        glm::dvec3 hsv = glm::vec3(std::fmod(sim_time * 10.0f, 360.0f), 0.5f, scale * -std::cosf(sim_time * 0.075f));
+        glm::vec3 rgb = glm::rgbColor(hsv);
+        glUniform2fv(add_ink_shader.getLocation("tx_size"), 1, &fluid_solver.cell_size[0]);
+        glUniform3fv(add_ink_shader.getLocation("color"), 1, &rgb[0]);
+        glUniform2fv(add_ink_shader.getLocation("pos"), 1, &mouse_pos[0]);
+        glUniform1f(add_ink_shader.getLocation("dt"), cfg->dt);
+        quad.draw();
+        std::swap(ink, temp_fbo);
+    }
 
-    velocity->bindTexture(0, GL_LINEAR);
-    ink->bindTexture(1, GL_LINEAR);
-
-    quad.draw();
-    std::swap(ink, temp_large);
+    // Advect ink
+    {
+        fluid_solver.advect(ink, temp_fbo);
+    }
 }
 
 void FluidSimulator::createStreamlines()
 {
+    static const Shader streamlines_shader(screen_vert, streamlines_frag, "streamlines");
+
     streamlines->bind();
 
     streamlines_shader.use();
 
-    glUniform2fv(streamlines_shader.getLocation("tx_size"), 1, &sim_tx_size[0]);
-    glUniform1f(streamlines_shader.getLocation("inv_dx"), 1.0f / dx);
+    glUniform1f(streamlines_shader.getLocation("inv_dx"), 1.0f / fluid_solver.dx);
 
-    velocity->bindTexture(0, GL_LINEAR);
+    fluid_solver.velocity->bindTexture(0, GL_LINEAR);
     noise->bindTexture(1, GL_LINEAR);
 
     quad.draw();
+}
+
+void FluidSimulator::drawColorMap(const std::unique_ptr<FBO>& scalar_field)
+{
+    static const Shader color_map_shader(screen_vert, color_map_frag, "color-map");
+
+    color_map_shader.use();
+
+    glm::vec2 min_max(cfg->range_min, cfg->range_max);
+
+    glUniform2fv(color_map_shader.getLocation("min_max"), 1, &min_max[0]);
+
+    scalar_field->bindTexture(0, GL_LINEAR);
+    transfer_function.bind(1);
+
+    quad.draw();
+}
+
+void FluidSimulator::setColorMap(int index)
+{
+    transfer_function.setColors(ColorMap::color_maps[index]);
+}
+
+void FluidSimulator::setColorMapRange()
+{
+    if (auto_set_range)
+    {
+        if (vis_mode == STREAMLINES)
+        {
+            auto mm = streamlines->minMax();
+            cfg->range_min = mm.first.x;
+            cfg->range_max = mm.second.x;
+        }
+        else if (vis_mode == CURL)
+        {
+            auto mm = fluid_solver.curl->minMax();
+            float abs_max = std::max(std::abs(mm.first.x), std::abs(mm.second.x));
+            cfg->range_min = -abs_max;
+            cfg->range_max = abs_max;
+        }
+        else if (vis_mode == PRESSURE)
+        {
+            auto mm = fluid_solver.pressure->minMax();
+            float abs_max = std::max(std::abs(mm.first.x), std::abs(mm.second.x));
+            cfg->range_min = -abs_max;
+            cfg->range_max = abs_max;
+        }
+        else if (vis_mode == SPEED)
+        {
+            auto mm = fluid_solver.speed->minMax();
+            cfg->range_min = mm.first.x;
+            cfg->range_max = mm.second.x;
+        }
+    }
 }
 
 bool FluidSimulator::mouse_drag_event(const nanogui::Vector2i& p, const nanogui::Vector2i& rel, int button, int modifiers)
@@ -332,28 +231,21 @@ void FluidSimulator::resize()
     }
     fb_size = glm::ivec2(glm::vec2(fb_size) * screen()->pixel_ratio());
 
-    simulation_size = fb_size / 4;
-    sim_tx_size = 1.0f / glm::vec2(simulation_size);
+    fluid_solver.setSize(fb_size / 4);
 
-    for (auto& s_fbo : { &temp_fbo, &velocity, &pressure, &divergence, &curl })
-    {
-        *s_fbo = std::make_unique<FBO>(simulation_size);
-    }
-
-    //std::vector<glm::vec4> ink_d(fb_size.x * fb_size.y, glm::vec4(glm::rgbColor(glm::vec3(200.0f, 0.5f, 0.5f)), 1.0));
-    //ink = std::make_unique<FBO>(fb_size, 0.5f, ink_d.data());
     ink = std::make_unique<FBO>(fb_size, 0.75f);
     streamlines = std::make_unique<FBO>(fb_size);
-    temp_large = std::make_unique<FBO>(fb_size);
+    temp_fbo = std::make_unique<FBO>(fb_size);
 
     // create noise texture
-    auto noise_size = fb_size;
-    std::vector<glm::vec4> initial_noise(noise_size.x * noise_size.y, glm::vec4(0.0f));
+    std::mt19937 engine(std::random_device{}());
+    std::uniform_real_distribution<float> distribution(0.0, 1.0);
+    std::vector<glm::vec4> initial_noise(fb_size.x * fb_size.y, glm::vec4(0.0f));
     for (auto& n : initial_noise)
     {
-        n = glm::vec4(((float)rand() / (RAND_MAX)));
+        n = glm::vec4(distribution(engine));
     }
-    noise = std::make_unique<FBO>(noise_size, 0.0f, initial_noise.data());
+    noise = std::make_unique<FBO>(fb_size, 0.0f, initial_noise.data());
 }
 
 void FluidSimulator::saveNextRender(const std::string &filename)

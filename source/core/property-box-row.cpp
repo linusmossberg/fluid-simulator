@@ -6,8 +6,7 @@ using namespace nanogui;
 Application::PropertyBoxRow::PropertyBoxRow(
     Widget* window, const std::vector<Config::Property*> &properties, 
     const std::string &name, const std::string &unit, size_t precision, 
-    float step, std::string tooltip, size_t total_width)
-    : 
+    float step, std::string tooltip, size_t total_width) : 
     properties(properties), last_values(properties.size()), float_boxes(properties.size())
 {
     Widget* panel = window;

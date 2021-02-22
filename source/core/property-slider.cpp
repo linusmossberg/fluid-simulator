@@ -18,16 +18,6 @@ Application::PropertySlider::PropertySlider(Widget* window, Config::Property* p,
     slider->set_value(prop->getNormalized());
     slider->set_fixed_size({ 200, 20 });
 
-    text_box = new TextBox(panel);
-    text_box->set_fixed_size(Vector2i(70, 20));
-    text_box->set_font_size(14);
-    text_box->set_alignment(TextBox::Alignment::Right);
-    text_box->set_units(unit);
-
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(precision) << prop->getDisplay();
-    text_box->set_value(ss.str());
-
     slider->set_callback([prop = prop, slider = slider, this](float value)
         {
             // Hack to skip first set event. Could be fixed if nanogui didn't trigger the slider set event on mouse button release.
@@ -42,6 +32,22 @@ Application::PropertySlider::PropertySlider(Widget* window, Config::Property* p,
     );
 
     slider->set_final_callback([this](float value) { initiated = false; } );
+
+    float_box = new FloatBox<float>(panel);
+    float_box->set_alignment(TextBox::Alignment::Right);
+    float_box->set_fixed_size({ 70, 20 });
+    float_box->number_format("%.0" + std::to_string(precision) + "f");
+    float_box->set_editable(true);
+    float_box->set_value(prop->getDisplay());
+    float_box->set_font_size(14);
+    float_box->set_units(unit);
+
+    float_box->set_callback([float_box = float_box, prop = prop, precision](float value)
+        {
+            prop->setDisplay(value);
+            float_box->set_value(*prop);
+        }
+    );
 }
 
 
@@ -49,11 +55,8 @@ void Application::PropertySlider::updateValue()
 {
     if (last_value != *prop)
     {
-        float v = prop->getNormalized();
-        slider->set_value(v);
-        std::stringstream ss;
-        ss << std::fixed << std::setprecision(precision) << prop->getDisplay();
-        text_box->set_value(ss.str());
+        slider->set_value(prop->getNormalized());
+        float_box->set_value(prop->getDisplay());
         last_value = *prop;
     }
 }

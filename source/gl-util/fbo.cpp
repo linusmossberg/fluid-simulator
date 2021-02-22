@@ -27,8 +27,8 @@ FBO::FBO(const glm::ivec2 &size, float initial, void* initial_data) : size(size)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
@@ -45,16 +45,45 @@ FBO::~FBO()
     glDeleteFramebuffers(1, &handle);
 }
 
-void FBO::bind()
+void FBO::bind() const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, handle);
 }
 
-void FBO::bindTexture(int binding, int interpolation)
+void FBO::bindTexture(int binding, int interpolation) const
 {
     glActiveTexture(GL_TEXTURE0 + binding);
     glBindTexture(GL_TEXTURE_2D, texture);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, interpolation);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, interpolation);
+}
+
+std::pair<glm::vec4, glm::vec4> FBO::minMax() const
+{
+    glViewport(0, 0, size.x, size.y);
+    glScissor(0, 0, size.x, size.y);
+
+    bind();
+
+    std::vector<glm::vec4> data(size.x * size.y, glm::vec4(0.0));
+    glReadPixels(0, 0, size.x, size.y, GL_RGBA, GL_FLOAT, data.data());
+
+    glm::vec4 min_v(std::numeric_limits<float>::max());
+    glm::vec4 max_v(std::numeric_limits<float>::lowest());
+
+    for (int y = 0; y < size.y; y++)
+    {
+        for (int x = 0; x < size.x; x++)
+        {
+            for (int c = 0; c < 4; c++)
+            {
+                float v = data[y * size.y + x][c];
+
+                if (v < min_v[c]) min_v[c] = v;
+                if (v > max_v[c]) max_v[c] = v;
+            }
+        }
+    }
+    return { min_v, max_v };
 }

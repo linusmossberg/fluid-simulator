@@ -56,7 +56,11 @@ void main()
         avg_noise += texture(noise, x).x;
     }
 
-    avg_noise /= (2.0 * N + 1);
+    avg_noise /= (2.0 * N + 1.0);
 
-    color = vec4(((avg_noise - 0.5) * 4.0) + 0.5);
+    // Apply contrast
+    const float contrast = 4.0;
+    avg_noise = ((avg_noise - 0.5) * contrast) + 0.5;
+
+    color = vec4(clamp(avg_noise, 0.0, 1.0));
 })glsl";
