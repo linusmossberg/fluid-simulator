@@ -4,7 +4,6 @@
 
 #include <glm/glm.hpp>
 
-#include "../gl-util/quad.hpp"
 #include "../gl-util/texture-1d.hpp"
 
 #include "fluid-solver.hpp"
@@ -32,6 +31,7 @@ public:
     glm::ivec2 fb_size;
     glm::vec2 mouse_pos = glm::vec2(0.05,0.5);
 
+    bool clear_ink = false;
     bool auto_set_range = true;
 
     double last_time = std::numeric_limits<double>::max();
@@ -65,8 +65,6 @@ private:
     void setColorMapRange();
 
     std::shared_ptr<Config> cfg;
-
-    Quad quad;
 
     std::unique_ptr<FBO> noise;
     std::unique_ptr<FBO> ink;

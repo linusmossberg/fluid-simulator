@@ -3,13 +3,13 @@
 class Quad
 {
 public:
-    Quad();
-
     ~Quad();
 
-    void bind();
+    static void bind();
+    static void draw();
 
-    void draw();
-
-    unsigned int VBO, VAO;
+private:
+    static void init();
+    inline static unsigned int VBO, VAO;
+    inline static bool initiated = false;
 };

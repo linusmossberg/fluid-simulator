@@ -5,6 +5,7 @@
 #include "util.hpp"
 #include "../gl-util/fbo.hpp"
 #include "../gl-util/shader.hpp"
+#include "../gl-util/quad.hpp"
 
 #include "../shaders/screen.vert"
 #include "../shaders/stencil.vert"
@@ -16,7 +17,6 @@
 #include "../shaders/curl.frag"
 #include "../shaders/vorticity.frag"
 #include "../shaders/gradient-subtract.frag"
-#include "../shaders/clear.frag"
 #include "../shaders/speed.frag"
 
 FluidSolver::FluidSolver(const std::shared_ptr<Config>& cfg) : cfg(cfg)
@@ -31,7 +31,14 @@ void FluidSolver::step()
 
     dx = cfg->sim_width / grid_cells.x;
 
-    quad.bind();
+    if (clear_velocity)
+    {
+        velocity->clear(glm::vec4(0.0f));
+        pressure->clear(glm::vec4(0.0f));
+        clear_velocity = false;
+    }
+
+    Quad::bind();
 
     applyForce();
     applyVorticityConfinement();
@@ -56,7 +63,7 @@ void FluidSolver::advect(std::unique_ptr<FBO>& quantity, std::unique_ptr<FBO>& t
     velocity->bindTexture(0, GL_LINEAR);
     quantity->bindTexture(1, GL_LINEAR);
 
-    quad.draw();
+    Quad::draw();
 
     std::swap(quantity, temp_quantity);
 }
@@ -86,7 +93,7 @@ void FluidSolver::diffuseVelocity()
 
         velocity->bindTexture(0);
 
-        quad.draw();
+        Quad::draw();
 
         std::swap(velocity, temp_fbo);
     }
@@ -110,7 +117,7 @@ void FluidSolver::applyForce()
     glUniform2fv(force_shader.getLocation("force"), 1, &force[0]);
     glUniform1f(force_shader.getLocation("dt"), cfg->dt);
 
-    quad.draw();
+    Quad::draw();
 
     std::swap(velocity, temp_fbo);
 }
@@ -128,7 +135,7 @@ void FluidSolver::computeCurl()
     glUniform2fv(curl_shader.getLocation("tx_size"), 1, &cell_size[0]);
     glUniform1f(curl_shader.getLocation("half_inv_dx"), 0.5f / dx);
 
-    quad.draw();
+    Quad::draw();
 }
 
 void FluidSolver::applyVorticityConfinement()
@@ -151,7 +158,7 @@ void FluidSolver::applyVorticityConfinement()
     glUniform1f(vorticity_shader.getLocation("dt"), cfg->dt);
     glUniform1f(vorticity_shader.getLocation("vorticity_scale"), cfg->vorticity);
 
-    quad.draw();
+    Quad::draw();
 
     std::swap(temp_fbo, velocity);
 }
@@ -169,7 +176,7 @@ void FluidSolver::computeDivergence()
     glUniform2fv(divergence_shader.getLocation("tx_size"), 1, &cell_size[0]);
     glUniform1f(divergence_shader.getLocation("half_inv_dx"), 0.5f / dx);
 
-    quad.draw();
+    Quad::draw();
 }
 
 void FluidSolver::computePressure()
@@ -178,7 +185,7 @@ void FluidSolver::computePressure()
 
     computeDivergence();
 
-    if(clear_pressure) clearFBO(pressure, glm::vec4(0.0f));
+    if (clear_pressure) pressure->clear(glm::vec4(0.0f));
 
     jacobi_pressure_shader.use();
 
@@ -193,7 +200,7 @@ void FluidSolver::computePressure()
 
         pressure->bindTexture(0);
 
-        quad.draw();
+        Quad::draw();
 
         std::swap(temp_fbo, pressure);
     }
@@ -216,7 +223,7 @@ void FluidSolver::subtractPressureGradient()
     glUniform2fv(gradient_subtract_shader.getLocation("tx_size"), 1, &cell_size[0]);
     glUniform1f(gradient_subtract_shader.getLocation("half_inv_dx"), 0.5f / dx);
 
-    quad.draw();
+    Quad::draw();
 
     std::swap(temp_fbo, velocity);
 }
@@ -228,17 +235,7 @@ void FluidSolver::computeSpeed()
     speed->bind();
     speed_shader.use();
     velocity->bindTexture(0);
-    quad.draw();
-}
-
-void FluidSolver::clearFBO(std::unique_ptr<FBO>& fbo, const glm::vec4& clear_color)
-{
-    static const Shader clear_shader(screen_vert, clear_frag, "clear");
-
-    clear_shader.use();
-    fbo->bind();
-    glUniform4fv(clear_shader.getLocation("clear_color"), 1, &clear_color[0]);
-    quad.draw();
+    Quad::draw();
 }
 
 void FluidSolver::setSize(const glm::ivec2& grid_cells_)

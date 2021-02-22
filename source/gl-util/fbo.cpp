@@ -6,6 +6,12 @@
 
 #include <nanogui/opengl.h>
 
+#include "shader.hpp"
+#include "quad.hpp"
+
+#include "../shaders/screen.vert"
+#include "../shaders/clear.frag"
+
 FBO::FBO(const glm::ivec2 &size, float initial, void* initial_data) : size(size)
 {
     glGenFramebuffers(1, &handle);
@@ -85,5 +91,21 @@ std::pair<glm::vec4, glm::vec4> FBO::minMax() const
             }
         }
     }
+
     return { min_v, max_v };
+}
+
+void FBO::clear(const glm::vec4& clear_color) const
+{
+    static const Shader clear_shader(screen_vert, clear_frag, "clear");
+
+    Quad::bind();
+
+    glViewport(0, 0, size.x, size.y);
+    glScissor(0, 0, size.x, size.y);
+
+    bind();
+    clear_shader.use();
+    glUniform4fv(clear_shader.getLocation("clear_color"), 1, &clear_color[0]);
+    Quad::draw();
 }

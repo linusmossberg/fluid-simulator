@@ -35,11 +35,9 @@ Application::Application() :
     b->set_tooltip("Save Screenshot");
     b->set_callback([this]
     {
-        fluid_simulator->paused = true;
         std::string path = nanogui::file_dialog({{"tga", ""}}, true);
         if (path.empty()) return;
         fluid_simulator->saveNextRender(path);
-        fluid_simulator->paused = false;
     });
 
     window = new nanogui::Window(this, "Menu");
@@ -98,18 +96,25 @@ Application::Application() :
     );
 
     panel = new nanogui::Widget(window);
-    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 3, nanogui::Alignment::Fill));
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 4, nanogui::Alignment::Fill));
     label = new nanogui::Label(panel, "Time Step", "sans-bold");
     label->set_fixed_width(86);
 
-    float_box_rows.push_back(PropertyBoxRow(panel, { &cfg->dt }, "", "s", 4, 0.001f, "", 135));
+    float_box_rows.push_back(PropertyBoxRow(panel, { &cfg->dt }, "", "s", 6, 0.001f, "", 90));
 
-    b = new nanogui::Button(panel, "Real Time");
+    b = new nanogui::Button(panel, "Realtime");
     b->set_flags(nanogui::Button::Flags::ToggleButton);
     b->set_pushed(!fluid_simulator->fixed_dt);
-    b->set_fixed_size({ 145, 20 });
+    b->set_fixed_size({ 90, 20 });
     b->set_font_size(16);
     b->set_change_callback([this](bool state) { fluid_simulator->fixed_dt = !state; });
+
+    b = new nanogui::Button(panel, "Paused");
+    b->set_flags(nanogui::Button::Flags::ToggleButton);
+    b->set_pushed(fluid_simulator->paused);
+    b->set_fixed_size({ 90, 20 });
+    b->set_font_size(16);
+    b->set_change_callback([this](bool state) { fluid_simulator->paused = state; });
 
     sliders.emplace_back(window, &cfg->mu, "Viscosity", "cP", 2);
     sliders.emplace_back(window, &cfg->rho, "Density", "kg/L", 2);
@@ -121,16 +126,27 @@ Application::Application() :
     sliders.emplace_back(window, &cfg->viscosity_iterations, "Visc. Steps", "", 0);
 
     panel = new nanogui::Widget(window);
-    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill));
-    label = new nanogui::Label(panel, "Options", "sans-bold");
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 4, nanogui::Alignment::Fill));
+    label = new nanogui::Label(panel, "Clear", "sans-bold");
     label->set_fixed_width(86);
 
-    b = new nanogui::Button(panel, "Clear Pressure");
+    b = new nanogui::Button(panel, "Pressure*");
     b->set_flags(nanogui::Button::Flags::ToggleButton);
     b->set_pushed(fluid_simulator->fluid_solver.clear_pressure);
-    b->set_fixed_size({ 190, 20 });
+    b->set_fixed_size({ 83, 20 });
     b->set_font_size(16);
     b->set_change_callback([this](bool state) { fluid_simulator->fluid_solver.clear_pressure = state; });
+    b->set_tooltip("Clears the pressure each iteration when enabled. This reduces oscillations but it requires more pressure iterations.");
+
+    b = new nanogui::Button(panel, "Ink");
+    b->set_fixed_size({ 83, 20 });
+    b->set_font_size(16);
+    b->set_callback([this]() { fluid_simulator->clear_ink = true; });
+
+    b = new nanogui::Button(panel, "Velocity");
+    b->set_fixed_size({ 83, 20 });
+    b->set_font_size(16);
+    b->set_callback([this]() { fluid_simulator->fluid_solver.clear_velocity = true; });
 
     new nanogui::Label(window, "Visualization", "sans-bold", 20);
 

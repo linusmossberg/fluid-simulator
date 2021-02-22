@@ -15,6 +15,8 @@ public:
 
     void bindTexture(int binding, int interpolation = GL_NEAREST) const;
 
+    void clear(const glm::vec4& clear_color) const;
+
     std::pair<glm::vec4, glm::vec4> minMax() const;
 
     unsigned int handle, texture;

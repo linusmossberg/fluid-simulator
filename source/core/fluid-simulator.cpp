@@ -25,10 +25,11 @@
 #include "config.hpp"
 #include "../gl-util/fbo.hpp"
 #include "../gl-util/shader.hpp"
+#include "../gl-util/quad.hpp"
 #include "util.hpp"
 
 FluidSimulator::FluidSimulator(Widget* parent, const std::shared_ptr<Config>& cfg) :
-    Canvas(parent, 1, false), quad(), cfg(cfg), fluid_solver(cfg),
+    Canvas(parent, 1, false), cfg(cfg), fluid_solver(cfg),
     transfer_function(ColorMap::color_maps[0])
 {
     resize();
@@ -40,14 +41,7 @@ void FluidSimulator::draw_contents()
 
     if (!fixed_dt && time > last_time) cfg->dt = float(time - last_time);
 
-    sim_time += cfg->dt;
-
     last_time = time;
-
-    if (paused)
-    {
-        return;
-    }
 
     int prev_viewport[4];
     glGetIntegerv(GL_VIEWPORT, prev_viewport);
@@ -55,15 +49,19 @@ void FluidSimulator::draw_contents()
     int prev_scissor[4];
     glGetIntegerv(GL_SCISSOR_BOX, prev_scissor);
 
-    fluid_solver.force_pos = mouse_pos;
-    fluid_solver.step();
+    Quad::bind();
 
-    quad.bind();
+    if (!paused)
+    {
+        fluid_solver.force_pos = mouse_pos;
+        fluid_solver.step();
+        sim_time += cfg->dt;
+    }
 
     glViewport(0, 0, fb_size.x, fb_size.y);
     glScissor(0, 0, fb_size.x, fb_size.y);
 
-    if (vis_mode == INK)
+    if (vis_mode == INK && !paused)
         updateInk();
     else if (vis_mode == STREAMLINES)
         createStreamlines();
@@ -73,15 +71,14 @@ void FluidSimulator::draw_contents()
     glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
     glScissor(prev_scissor[0], prev_scissor[1], prev_scissor[2], prev_scissor[3]);
 
-    static const Shader draw_shader(screen_vert, draw_frag, "draw");
-
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     if (vis_mode == INK)
     {
+        static const Shader draw_shader(screen_vert, draw_frag, "draw");
         draw_shader.use();
         ink->bindTexture(0);
-        quad.draw();
+        Quad::draw();
     }
     else if (vis_mode == STREAMLINES)
     {
@@ -107,6 +104,12 @@ void FluidSimulator::updateInk()
 {
     static const Shader add_ink_shader(screen_vert, add_ink_frag, "ink");
 
+    if (clear_ink)
+    {
+        ink->clear(glm::vec4(0.5f));
+        clear_ink = false;
+    }
+
     // Add ink
     {
         temp_fbo->bind();
@@ -119,7 +122,7 @@ void FluidSimulator::updateInk()
         glUniform3fv(add_ink_shader.getLocation("color"), 1, &rgb[0]);
         glUniform2fv(add_ink_shader.getLocation("pos"), 1, &mouse_pos[0]);
         glUniform1f(add_ink_shader.getLocation("dt"), cfg->dt);
-        quad.draw();
+        Quad::draw();
         std::swap(ink, temp_fbo);
     }
 
@@ -142,7 +145,7 @@ void FluidSimulator::createStreamlines()
     fluid_solver.velocity->bindTexture(0, GL_LINEAR);
     noise->bindTexture(1, GL_LINEAR);
 
-    quad.draw();
+    Quad::draw();
 }
 
 void FluidSimulator::drawColorMap(const std::unique_ptr<FBO>& scalar_field)
@@ -158,7 +161,7 @@ void FluidSimulator::drawColorMap(const std::unique_ptr<FBO>& scalar_field)
     scalar_field->bindTexture(0, GL_LINEAR);
     transfer_function.bind(1);
 
-    quad.draw();
+    Quad::draw();
 }
 
 void FluidSimulator::setColorMap(int index)
