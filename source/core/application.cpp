@@ -79,15 +79,16 @@ Application::Application() :
     panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 2, nanogui::Alignment::Fill, 0, 5));
 
     panel = new nanogui::Widget(window);
-    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 4, nanogui::Alignment::Fill));
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 5, nanogui::Alignment::Fill));
     label = new nanogui::Label(panel, "Render Size", "sans-bold");
     label->set_fixed_width(86);
 
-    float_box_rows.push_back(PropertyBoxRow(panel, { &cfg->width, &cfg->height }, "", "px", 0, 1.0f, "", 180));
+    float_box_rows.push_back(PropertyBoxRow(panel, { &cfg->width, &cfg->height }, "", "px", 0, 1.0f, "", 130));
+    float_box_rows.push_back(PropertyBoxRow(panel, { &cfg->sim_downscale }, "", "sim 1/x", 0, 1.0f, "", 75));
 
     b = new nanogui::Button(panel, "Set");
     b->set_font_size(16);
-    b->set_fixed_size({ 90, 20 });
+    b->set_fixed_size({ 65, 20 });
     b->set_callback([this, window]
         { 
             fluid_simulator->resize();
@@ -305,6 +306,42 @@ Application::Application() :
     b->set_fixed_size({ 73, 20 });
     b->set_font_size(16);
     b->set_change_callback([this](bool state) { fluid_simulator->auto_set_range = state; });
+
+    new nanogui::Label(window, "Ink", "sans-bold", 20);
+
+    panel = new nanogui::Widget(window);
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 3, nanogui::Alignment::Fill));
+    label = new nanogui::Label(panel, "Options", "sans-bold");
+    label->set_fixed_width(86);
+
+    b = new nanogui::Button(panel, "Filmic Tonemap");
+    b->set_flags(nanogui::Button::Flags::ToggleButton);
+    b->set_pushed(fluid_simulator->tonemap);
+    b->set_fixed_size({ 130, 20 });
+    b->set_font_size(16);
+    b->set_change_callback([this](bool state) { fluid_simulator->tonemap = state; });
+
+    b = new nanogui::Button(panel, "Load Image", FA_FOLDER_OPEN);
+    b->set_fixed_size({ 130, 20 });
+    b->set_font_size(16);
+    b->set_callback([this]
+        {
+            std::string path = nanogui::file_dialog
+            (
+                {
+                    {"jpeg", ""}, { "jpg","" }, {"png",""},
+                    {"tga",""}, {"bmp",""}, {"psd",""}, {"gif",""},
+                    {"hdr",""}, {"pic",""}, {"pnm", ""}
+                }, false
+            );
+
+            if (path.empty()) return;
+
+            fluid_simulator->ink_image_path = path;
+        });
+
+    sliders.emplace_back(window, &cfg->ink_rate, "Spawn Rate", "", 2);
+    sliders.emplace_back(window, &cfg->ink_exposure, "Exposure", "EV", 1);
 
     perform_layout();
 }

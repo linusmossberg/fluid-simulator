@@ -14,6 +14,11 @@ Texture1D::Texture1D(const std::vector<glm::vec3>& colors)
     glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB32F, colors.size(), 0, GL_RGB, GL_FLOAT, colors.data());
 }
 
+Texture1D::~Texture1D()
+{
+    glDeleteTextures(1, &handle);
+}
+
 void Texture1D::setColors(const std::vector<glm::vec3>& colors)
 {
     glBindTexture(GL_TEXTURE_1D, handle);

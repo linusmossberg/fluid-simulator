@@ -1,10 +1,13 @@
 #pragma once
 
+#include <filesystem>
+
 #include <nanogui/canvas.h>
 
 #include <glm/glm.hpp>
 
 #include "../gl-util/texture-1d.hpp"
+#include "../gl-util/texture-2d.hpp"
 
 #include "fluid-solver.hpp"
 
@@ -19,6 +22,8 @@ public:
     virtual void draw_contents() override;
 
     void setColorMap(int index);
+    void setInkImage();
+    std::string ink_image_path = "";
 
     void resize();
     void saveNextRender(const std::string& filename);
@@ -33,6 +38,7 @@ public:
 
     bool clear_ink = false;
     bool auto_set_range = true;
+    bool tonemap = true;
 
     double last_time = std::numeric_limits<double>::max();
 
@@ -61,15 +67,16 @@ public:
 private:
     void updateInk();
     void createStreamlines();
+    void drawInk();
     void drawColorMap(const std::unique_ptr<FBO>& scalar_field);
     void setColorMapRange();
 
     std::shared_ptr<Config> cfg;
 
-    std::unique_ptr<FBO> noise;
     std::unique_ptr<FBO> ink;
     std::unique_ptr<FBO> streamlines;
     std::unique_ptr<FBO> temp_fbo;
+    Texture2D noise;
 
     Texture1D transfer_function;
 

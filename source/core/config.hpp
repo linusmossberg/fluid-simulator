@@ -7,18 +7,21 @@ class Config
 public:
     Config() : 
         mu(1.0f, 0.0f, 1e4f, 1e-3f), // Display as centipoise
-        rho(1.0f, 0.1f, 10.0f, 1e3f),  // Display as kg/L
+        rho(1.0f, 0.1f, 10.0f, 1e3f), // Display as kg/L
         vorticity(0.05f, 0.0f, 0.2f),
         width(820.0f, 400.0f, 1000.0f),
         height(640.0f, 400.0f, 1000.0f),
-        F(0.05f, 0.0f, 0.5f),
+        sim_downscale(4.0f, 1.0f, 8.0f),
+        F(0.03f, 0.0f, 0.5f),
         F_angle(0.0f, 0.0f, 360.0f, glm::radians(1.0f)),
         sim_width(2.0f, 1.0f, 3.0f),
         range_min(0.0f, -1e3f, 1e3f),
         range_max(1.0f, -1e3f, 1e3f),
         dt(1.0f / 60.0f, 1e-5f, 1e-1f),
         pressure_iterations(50.0f, 10.0f, 500.0f),
-        viscosity_iterations(50.0f, 10.0f, 500.0f)
+        viscosity_iterations(50.0f, 10.0f, 500.0f),
+        ink_rate(1.0f, 0.0f, 2.0f),
+        ink_exposure(0.0f, -5.0f, 5.0f)
     { }
 
     struct Property
@@ -57,6 +60,7 @@ public:
     Property vorticity;
     Property width;
     Property height;
+    Property sim_downscale;
     Property F;
     Property F_angle;
     Property sim_width;
@@ -65,4 +69,6 @@ public:
     Property dt;
     Property pressure_iterations;
     Property viscosity_iterations;
+    Property ink_rate;
+    Property ink_exposure;
 };

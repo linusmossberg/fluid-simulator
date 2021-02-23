@@ -21,7 +21,10 @@ void main()
 {
     new_velocity.xy = texture(velocity, TX_C).xy;
 
-    vec2 d = (TX_C - pos) / tx_size;
+
+    vec2 aspect = vec2(1.0, tx_size.x / tx_size.y) * 256.0;
+
+    vec2 d = (TX_C - pos) * aspect;
 
     const float radius = 10.0;
     const float falloff_integral = PI / radius;

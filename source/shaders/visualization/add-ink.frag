@@ -19,9 +19,11 @@ out vec4 new_ink;
 
 void main()
 {
-    vec2 d = (TX_C - pos) / tx_size;
+    vec2 aspect = vec2(1.0, tx_size.x / tx_size.y) * 256.0;
 
-    const float radius = 2;
+    vec2 d = (TX_C - pos) * aspect;
+
+    const float radius = 2.0; // 2
     const float falloff_integral = PI / radius;
 
     float falloff = exp(-dot(d,d) / radius);

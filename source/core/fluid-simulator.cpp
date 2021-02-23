@@ -13,11 +13,12 @@
 #include <glm/gtx/color_space.hpp>
 
 #include "../shaders/screen.vert"
-#include "../shaders/draw.frag"
-#include "../shaders/advect.frag"
-#include "../shaders/add-ink.frag"
-#include "../shaders/streamlines.frag"
 
+#include "../shaders/visualization/draw-tonemap.frag"
+#include "../shaders/visualization/draw.frag"
+#include "../shaders/visualization/add-ink.frag"
+#include "../shaders/visualization/streamlines.frag"
+#include "../shaders/visualization/ink-image.frag"
 #include "../shaders/visualization/color-map.frag"
 
 #include "color-maps.hpp"
@@ -68,33 +69,24 @@ void FluidSimulator::draw_contents()
 
     setColorMapRange();
 
+    if (!ink_image_path.empty())
+    {
+        setInkImage();
+    }
+
     glViewport(prev_viewport[0], prev_viewport[1], prev_viewport[2], prev_viewport[3]);
     glScissor(prev_scissor[0], prev_scissor[1], prev_scissor[2], prev_scissor[3]);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    if (vis_mode == INK)
+    switch (vis_mode)
     {
-        static const Shader draw_shader(screen_vert, draw_frag, "draw");
-        draw_shader.use();
-        ink->bindTexture(0);
-        Quad::draw();
-    }
-    else if (vis_mode == STREAMLINES)
-    {
-        drawColorMap(streamlines);
-    }
-    else if (vis_mode == CURL)
-    {
-        drawColorMap(fluid_solver.curl);
-    }
-    else if(vis_mode == PRESSURE)
-    {
-        drawColorMap(fluid_solver.pressure);
-    }
-    else
-    {
-        drawColorMap(fluid_solver.speed);
+    case INK:         drawInk(); break;
+    case STREAMLINES: drawColorMap(streamlines); break;
+    case CURL:        drawColorMap(fluid_solver.curl); break;
+    case PRESSURE:    drawColorMap(fluid_solver.pressure); break;
+    case SPEED:       drawColorMap(fluid_solver.speed); break;
+    case ARROWS:      drawColorMap(fluid_solver.speed); break;
     }
     
     if (save_next) saveRender();
@@ -115,7 +107,7 @@ void FluidSimulator::updateInk()
         temp_fbo->bind();
         add_ink_shader.use();
         ink->bindTexture(0);
-        float scale = ((std::cosf(sim_time) * 0.5f) + 1.0f) * 500.0f;
+        float scale = ((std::cosf(sim_time) * 0.5f) + 1.0f) * 500.0f * cfg->ink_rate;
         glm::dvec3 hsv = glm::vec3(std::fmod(sim_time * 10.0f, 360.0f), 0.5f, scale * -std::cosf(sim_time * 0.075f));
         glm::vec3 rgb = glm::rgbColor(hsv);
         glUniform2fv(add_ink_shader.getLocation("tx_size"), 1, &fluid_solver.cell_size[0]);
@@ -135,17 +127,18 @@ void FluidSimulator::updateInk()
 void FluidSimulator::createStreamlines()
 {
     static const Shader streamlines_shader(screen_vert, streamlines_frag, "streamlines");
+    static float last_sim_time = std::numeric_limits<float>::lowest();
 
-    streamlines->bind();
-
-    streamlines_shader.use();
-
-    glUniform1f(streamlines_shader.getLocation("inv_dx"), 1.0f / fluid_solver.dx);
-
-    fluid_solver.velocity->bindTexture(0, GL_LINEAR);
-    noise->bindTexture(1, GL_LINEAR);
-
-    Quad::draw();
+    if (last_sim_time != sim_time)
+    {
+        streamlines->bind();
+        streamlines_shader.use();
+        glUniform1f(streamlines_shader.getLocation("inv_dx"), 1.0f / fluid_solver.dx);
+        fluid_solver.velocity->bindTexture(0, GL_LINEAR);
+        noise.bind(1);
+        Quad::draw();
+    }
+    last_sim_time = sim_time;
 }
 
 void FluidSimulator::drawColorMap(const std::unique_ptr<FBO>& scalar_field)
@@ -164,9 +157,45 @@ void FluidSimulator::drawColorMap(const std::unique_ptr<FBO>& scalar_field)
     Quad::draw();
 }
 
+void FluidSimulator::drawInk()
+{
+    static const Shader draw_tonemap_shader(screen_vert, draw_tonemap_frag, "draw-tonemap");
+    static const Shader draw_shader(screen_vert, draw_frag, "draw");
+
+    if (tonemap)
+    {
+        draw_tonemap_shader.use();
+        glUniform1f(draw_tonemap_shader.getLocation("exposure"), std::powf(2.0f, cfg->ink_exposure));
+    }  
+    else
+    {
+        draw_shader.use();
+        glUniform1f(draw_shader.getLocation("exposure"), std::powf(2.0f, cfg->ink_exposure));
+    }
+
+    ink->bindTexture(0);
+    Quad::draw();
+}
+
 void FluidSimulator::setColorMap(int index)
 {
     transfer_function.setColors(ColorMap::color_maps[index]);
+}
+
+void FluidSimulator::setInkImage()
+{
+    static const Shader ink_image_shader(screen_vert, ink_image_frag, "ink-image");
+
+    if (ink_image_path.empty()) return;
+
+    Texture2D image_texture(ink_image_path);
+
+    ink->bind();
+    ink_image_shader.use();
+    image_texture.bind(0);
+    Quad::draw();
+
+    ink_image_path = "";
 }
 
 void FluidSimulator::setColorMapRange()
@@ -175,9 +204,8 @@ void FluidSimulator::setColorMapRange()
     {
         if (vis_mode == STREAMLINES)
         {
-            auto mm = streamlines->minMax();
-            cfg->range_min = mm.first.x;
-            cfg->range_max = mm.second.x;
+            cfg->range_min = 0.0f;
+            cfg->range_max = 1.0f;
         }
         else if (vis_mode == CURL)
         {
@@ -193,7 +221,7 @@ void FluidSimulator::setColorMapRange()
             cfg->range_min = -abs_max;
             cfg->range_max = abs_max;
         }
-        else if (vis_mode == SPEED)
+        else if (vis_mode == SPEED || vis_mode == ARROWS)
         {
             auto mm = fluid_solver.speed->minMax();
             cfg->range_min = mm.first.x;
@@ -234,21 +262,21 @@ void FluidSimulator::resize()
     }
     fb_size = glm::ivec2(glm::vec2(fb_size) * screen()->pixel_ratio());
 
-    fluid_solver.setSize(fb_size / 4);
+    fluid_solver.setSize(glm::vec2(fb_size) / (float)cfg->sim_downscale);
 
-    ink = std::make_unique<FBO>(fb_size, 0.75f);
+    ink = std::make_unique<FBO>(fb_size, 0.5f);
     streamlines = std::make_unique<FBO>(fb_size);
     temp_fbo = std::make_unique<FBO>(fb_size);
 
     // create noise texture
     std::mt19937 engine(std::random_device{}());
     std::uniform_real_distribution<float> distribution(0.0, 1.0);
-    std::vector<glm::vec4> initial_noise(fb_size.x * fb_size.y, glm::vec4(0.0f));
-    for (auto& n : initial_noise)
+    std::vector<glm::vec4> noise_data(fb_size.x * fb_size.y, glm::vec4(0.0f));
+    for (auto& n : noise_data)
     {
         n = glm::vec4(distribution(engine));
     }
-    noise = std::make_unique<FBO>(fb_size, 0.0f, initial_noise.data());
+    noise.setData(fb_size, noise_data.data());
 }
 
 void FluidSimulator::saveNextRender(const std::string &filename)

@@ -35,6 +35,7 @@ Application::PropertyBoxRow::PropertyBoxRow(
         float_boxes[i]->set_spinnable(true);
         float_boxes[i]->set_value_increment(step);
         float_boxes[i]->set_tooltip(tooltip);
+        float_boxes[i]->set_alignment(nanogui::TextBox::Alignment::Left);
 
         float_boxes[i]->set_callback([float_box = float_boxes[i], prop = properties[i], precision](float value)
             {

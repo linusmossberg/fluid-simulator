@@ -9,15 +9,16 @@
 
 #include "../shaders/screen.vert"
 #include "../shaders/stencil.vert"
-#include "../shaders/advect.frag"
-#include "../shaders/force.frag"
-#include "../shaders/jacobi-diffusion.frag"
-#include "../shaders/jacobi-pressure.frag"
-#include "../shaders/divergence.frag"
-#include "../shaders/curl.frag"
-#include "../shaders/vorticity.frag"
-#include "../shaders/gradient-subtract.frag"
-#include "../shaders/speed.frag"
+
+#include "../shaders/fluid-solver/advect.frag"
+#include "../shaders/fluid-solver/force.frag"
+#include "../shaders/fluid-solver/jacobi-diffusion.frag"
+#include "../shaders/fluid-solver/jacobi-pressure.frag"
+#include "../shaders/fluid-solver/divergence.frag"
+#include "../shaders/fluid-solver/curl.frag"
+#include "../shaders/fluid-solver/vorticity.frag"
+#include "../shaders/fluid-solver/gradient-subtract.frag"
+#include "../shaders/fluid-solver/speed.frag"
 
 FluidSolver::FluidSolver(const std::shared_ptr<Config>& cfg) : cfg(cfg)
 { 
