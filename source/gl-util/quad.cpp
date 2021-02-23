@@ -15,7 +15,7 @@ void Quad::init()
 {
     if (!initiated)
     {
-        const float vertices[] =
+        constexpr float vertices[] =
         {
             // xy         // st
            -0.5f, -0.5f,  0.0f, 0.0f,

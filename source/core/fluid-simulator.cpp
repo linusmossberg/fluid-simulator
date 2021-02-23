@@ -20,6 +20,8 @@
 #include "../shaders/visualization/streamlines.frag"
 #include "../shaders/visualization/ink-image.frag"
 #include "../shaders/visualization/color-map.frag"
+#include "../shaders/visualization/arrow.vert"
+#include "../shaders/visualization/arrow.frag"
 
 #include "color-maps.hpp"
 
@@ -27,6 +29,7 @@
 #include "../gl-util/fbo.hpp"
 #include "../gl-util/shader.hpp"
 #include "../gl-util/quad.hpp"
+#include "../gl-util/arrow.hpp"
 #include "util.hpp"
 
 FluidSimulator::FluidSimulator(Widget* parent, const std::shared_ptr<Config>& cfg) :
@@ -86,10 +89,17 @@ void FluidSimulator::draw_contents()
     case CURL:        drawColorMap(fluid_solver.curl); break;
     case PRESSURE:    drawColorMap(fluid_solver.pressure); break;
     case SPEED:       drawColorMap(fluid_solver.speed); break;
-    case ARROWS:      drawColorMap(fluid_solver.speed); break;
     }
-    
-    if (save_next) saveRender();
+
+    if (arrow_overlay)
+    {
+        drawArrows();
+    }
+
+    if (save_next)
+    {
+        saveRender();
+    }
 }
 
 void FluidSimulator::updateInk()
@@ -139,6 +149,35 @@ void FluidSimulator::createStreamlines()
         Quad::draw();
     }
     last_sim_time = sim_time;
+}
+
+void FluidSimulator::drawArrows()
+{
+    static const Shader arrow_shader(arrow_vert, arrow_frag, "arrow");
+    Arrow::bind();
+    arrow_shader.use();
+    fluid_solver.velocity->bindTexture(0, GL_LINEAR);
+
+    glm::vec2 coord(0.0f);
+    unsigned int coord_loc = arrow_shader.getLocation("coord");
+
+    glm::vec2 scale = glm::vec2(1.0f, fb_size.y / (float)fb_size.x) * 0.05f * (float)cfg->arrow_scale;
+    glUniform2fv(arrow_shader.getLocation("scale"), 1, &scale[0]);
+    glUniform4fv(arrow_shader.getLocation("arrow_color"), 1, &arrow_color[0]);
+
+    int cols = (int)cfg->arrow_cols;
+    int rows = (fb_size.y / (float)fb_size.x) * cols;
+
+    for (int x = 0; x < cols; x++)
+    {
+        coord.x = (x + 1) / (float)(cols + 1);
+        for (int y = 0; y < rows; y++)
+        {
+            coord.y = (y + 1) / (float)(rows + 1);
+            glUniform2fv(coord_loc, 1, &coord[0]);
+            Arrow::draw();
+        }
+    }
 }
 
 void FluidSimulator::drawColorMap(const std::unique_ptr<FBO>& scalar_field)
@@ -221,7 +260,7 @@ void FluidSimulator::setColorMapRange()
             cfg->range_min = -abs_max;
             cfg->range_max = abs_max;
         }
-        else if (vis_mode == SPEED || vis_mode == ARROWS)
+        else if (vis_mode == SPEED)
         {
             auto mm = fluid_solver.speed->minMax();
             cfg->range_min = mm.first.x;

@@ -35,6 +35,7 @@ public:
 
     glm::ivec2 fb_size;
     glm::vec2 mouse_pos = glm::vec2(0.05,0.5);
+    glm::vec3 arrow_color = glm::vec3(0.0f);
 
     bool clear_ink = false;
     bool auto_set_range = true;
@@ -48,13 +49,14 @@ public:
     {
         INK,
         STREAMLINES,
-        ARROWS,
         CURL,
         PRESSURE,
         SPEED
     };
 
     VisMode vis_mode = INK;
+
+    bool arrow_overlay = false;
 
     bool fixed_dt = true;
 
@@ -68,6 +70,7 @@ private:
     void updateInk();
     void createStreamlines();
     void drawInk();
+    void drawArrows();
     void drawColorMap(const std::unique_ptr<FBO>& scalar_field);
     void setColorMapRange();
 
