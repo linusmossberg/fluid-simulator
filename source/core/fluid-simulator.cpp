@@ -161,12 +161,13 @@ void FluidSimulator::drawArrows()
     glm::vec2 coord(0.0f);
     unsigned int coord_loc = arrow_shader.getLocation("coord");
 
-    glm::vec2 scale = glm::vec2(1.0f, fb_size.y / (float)fb_size.x) * 0.05f * (float)cfg->arrow_scale;
+    glm::vec2 scale = glm::vec2(1.0f, fb_size.x / (float)fb_size.y) * 0.05f * (float)cfg->arrow_scale;
+    //glm::vec2 scale = glm::vec2(1.0) * 0.05f * (float)cfg->arrow_scale;
     glUniform2fv(arrow_shader.getLocation("scale"), 1, &scale[0]);
     glUniform4fv(arrow_shader.getLocation("arrow_color"), 1, &arrow_color[0]);
 
     int cols = (int)cfg->arrow_cols;
-    int rows = (fb_size.y / (float)fb_size.x) * cols;
+    int rows = std::round((fb_size.y / (float)fb_size.x) * cols) + 0.5f;
 
     for (int x = 0; x < cols; x++)
     {

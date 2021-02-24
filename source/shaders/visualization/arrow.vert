@@ -15,5 +15,5 @@ void main()
 {
     vec2 d = normalize(texture(velocity, coord).xy);
     mat2 rot = mat2(d.x, d.y, -d.y, d.x);
-    gl_Position = vec4((coord - vec2(0.5)) * 2.0 + rot * (position * scale), 0.0, 1.0);
+    gl_Position = vec4((coord - vec2(0.5)) * 2.0 + rot * (position) * scale, 0.0, 1.0);
 })glsl";

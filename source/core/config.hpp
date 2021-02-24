@@ -21,7 +21,7 @@ public:
         pressure_iterations(50.0f, 10.0f, 500.0f),
         viscosity_iterations(50.0f, 10.0f, 500.0f),
         ink_rate(1.0f, 0.0f, 2.0f),
-        ink_exposure(0.0f, -5.0f, 5.0f),
+        ink_exposure(0.0f, -10.0f, 10.0f),
         arrow_scale(1.0f, 0.1f, 2.0f),
         arrow_cols(16.0f, 8.0f, 128.0f)
     { }

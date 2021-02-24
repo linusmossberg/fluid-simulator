@@ -8,7 +8,7 @@
 #include "color-maps.hpp"
 
 Application::Application() : 
-    Screen(nanogui::Vector2i(1280, 720), "fluid-simulator", true, false, false, false, false, 4U, 3U), 
+    Screen(nanogui::Vector2i(1280, 720), "fluid-simulator", true, false, true, false, false, 4U, 3U), 
     cfg(std::make_shared<Config>())
 {
     inc_ref();
