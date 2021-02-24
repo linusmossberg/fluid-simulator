@@ -64,12 +64,11 @@ void FluidSimulator::draw_contents()
 
     glViewport(0, 0, fb_size.x, fb_size.y);
     glScissor(0, 0, fb_size.x, fb_size.y);
-
-    if (vis_mode == INK && !paused)
-        updateInk();
-    else if (vis_mode == STREAMLINES)
+        
+    if (vis_mode == STREAMLINES)
         createStreamlines();
 
+    updateInk();
     setColorMapRange();
 
     if (!ink_image_path.empty())
@@ -105,6 +104,7 @@ void FluidSimulator::draw_contents()
 void FluidSimulator::updateInk()
 {
     static const Shader add_ink_shader(screen_vert, add_ink_frag, "ink");
+    static float last_sim_time = -1.0f;
 
     if (clear_ink)
     {
@@ -112,13 +112,14 @@ void FluidSimulator::updateInk()
         clear_ink = false;
     }
 
-    // Add ink
+    if (sim_time != last_sim_time)
     {
+        // Add ink
         temp_fbo->bind();
         add_ink_shader.use();
         ink->bindTexture(0);
-        float scale = ((std::cosf(sim_time) * 0.5f) + 1.0f) * 500.0f * cfg->ink_rate;
-        glm::dvec3 hsv = glm::vec3(std::fmod(sim_time * 10.0f, 360.0f), 0.5f, scale * -std::cosf(sim_time * 0.075f));
+        float scale = ((std::cosf(sim_time) * 0.5f) + 1.0f) * 300.0f * cfg->ink_rate;
+        glm::vec3 hsv = glm::vec3(std::fmod(sim_time * 10.0f, 360.0f), 0.5f, scale * -std::cosf(sim_time * 0.075f));
         glm::vec3 rgb = glm::rgbColor(hsv);
         glUniform2fv(add_ink_shader.getLocation("tx_size"), 1, &fluid_solver.cell_size[0]);
         glUniform3fv(add_ink_shader.getLocation("color"), 1, &rgb[0]);
@@ -126,29 +127,38 @@ void FluidSimulator::updateInk()
         glUniform1f(add_ink_shader.getLocation("dt"), cfg->dt);
         Quad::draw();
         std::swap(ink, temp_fbo);
-    }
 
-    // Advect ink
-    {
+        // Advect ink
         fluid_solver.advect(ink, temp_fbo);
     }
+
+    last_sim_time = sim_time;
 }
 
 void FluidSimulator::createStreamlines()
 {
     static const Shader streamlines_shader(screen_vert, streamlines_frag, "streamlines");
-    static float last_sim_time = std::numeric_limits<float>::lowest();
+    static float last_sim_time = -1.0f;
+    static int last_N = -1;
+    static float last_trace_time = -1.0f;
 
-    if (last_sim_time != sim_time)
+    float trace_time = cfg->streamline_time / 2.0f;
+    int N = int(cfg->streamline_steps / 2.0f);
+
+    if (last_sim_time != sim_time || N != last_N || trace_time != last_trace_time)
     {
         streamlines->bind();
         streamlines_shader.use();
         glUniform1f(streamlines_shader.getLocation("inv_dx"), 1.0f / fluid_solver.dx);
+        glUniform1i(streamlines_shader.getLocation("N"), N);
+        glUniform1f(streamlines_shader.getLocation("trace_time"), trace_time);
         fluid_solver.velocity->bindTexture(0, GL_LINEAR);
         noise.bind(1);
         Quad::draw();
     }
     last_sim_time = sim_time;
+    last_N = N;
+    last_trace_time = trace_time;
 }
 
 void FluidSimulator::drawArrows()
@@ -162,7 +172,6 @@ void FluidSimulator::drawArrows()
     unsigned int coord_loc = arrow_shader.getLocation("coord");
 
     glm::vec2 scale = glm::vec2(1.0f, fb_size.x / (float)fb_size.y) * 0.05f * (float)cfg->arrow_scale;
-    //glm::vec2 scale = glm::vec2(1.0) * 0.05f * (float)cfg->arrow_scale;
     glUniform2fv(arrow_shader.getLocation("scale"), 1, &scale[0]);
     glUniform4fv(arrow_shader.getLocation("arrow_color"), 1, &arrow_color[0]);
 
@@ -272,21 +281,10 @@ void FluidSimulator::setColorMapRange()
 
 bool FluidSimulator::mouse_drag_event(const nanogui::Vector2i& p, const nanogui::Vector2i& rel, int button, int modifiers)
 {
-    click = false;
-
     auto px = p - position();
     px.y() = size().y() - px.y();
     mouse_pos.x = px.x() / (float)size().x();
     mouse_pos.y = px.y() / (float)size().y();
-
-    return false;
-}
-
-bool FluidSimulator::mouse_button_event(const nanogui::Vector2i &p, int button, bool down, int modifiers)
-{
-    mouse_active = down;
-
-    click = mouse_active;
 
     return false;
 }

@@ -5,6 +5,8 @@ inline constexpr char streamlines_frag[] = R"glsl(
 #line 5
 
 uniform float inv_dx;
+uniform int N;
+uniform float trace_time;
 
 layout(binding = 0) uniform sampler2D velocity;
 layout(binding = 1) uniform sampler2D noise;
@@ -34,9 +36,7 @@ vec2 RK4(float dt, vec2 x)
 
 void main()
 {
-    const int N = 25;
-    const float trace_time = 0.25;
-    const float dt = trace_time / N;
+    float dt = trace_time / N;
 
     float avg_noise = texture(noise, TX_C).x;
 

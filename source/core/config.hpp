@@ -23,7 +23,9 @@ public:
         ink_rate(1.0f, 0.0f, 2.0f),
         ink_exposure(0.0f, -10.0f, 10.0f),
         arrow_scale(1.0f, 0.1f, 2.0f),
-        arrow_cols(16.0f, 8.0f, 128.0f)
+        arrow_cols(16.0f, 8.0f, 128.0f),
+        streamline_steps(50.0f, 10.0f, 200.0f),
+        streamline_time(0.5f, 0.1f, 5.0f)
     { }
 
     struct Property
@@ -75,4 +77,6 @@ public:
     Property ink_exposure;
     Property arrow_scale;
     Property arrow_cols;
+    Property streamline_steps;
+    Property streamline_time;
 };

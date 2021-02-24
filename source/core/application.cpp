@@ -327,7 +327,7 @@ Application::Application() :
     label = new nanogui::Label(panel, "Arrow Color", "sans-bold");
     label->set_fixed_width(86);
 
-    auto cp = new nanogui::ColorPicker(panel, { 0, 0, 0, 255 });
+    auto cp = new nanogui::ColorPicker(panel, { 255, 255, 255, 255 });
     cp->set_fixed_size({ 260, 20 });
     cp->set_final_callback([this](const nanogui::Color& c)
         {
@@ -341,6 +341,8 @@ Application::Application() :
     sliders.emplace_back(window, &cfg->arrow_scale, "Arrow Scale", "", 1);
     sliders.emplace_back(window, &cfg->ink_rate, "Ink Rate", "", 2);
     sliders.emplace_back(window, &cfg->ink_exposure, "Ink Exposure", "EV", 1);
+    sliders.emplace_back(window, &cfg->streamline_steps, "Trace steps", "", 0);
+    sliders.emplace_back(window, &cfg->streamline_time, "Trace time", "s", 1);
 
     perform_layout();
 }
