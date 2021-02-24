@@ -43,14 +43,15 @@ void FluidSimulator::draw_contents()
 {
     double time = glfwGetTime();
 
-    if (!fixed_dt && time > last_time) cfg->dt = float(time - last_time);
+    if (!fixed_dt && time > last_time)
+    {
+        cfg->dt = float(time - last_time);
+    }
 
     last_time = time;
 
-    int prev_viewport[4];
+    int prev_viewport[4], prev_scissor[4];
     glGetIntegerv(GL_VIEWPORT, prev_viewport);
-
-    int prev_scissor[4];
     glGetIntegerv(GL_SCISSOR_BOX, prev_scissor);
 
     Quad::bind();
@@ -66,7 +67,9 @@ void FluidSimulator::draw_contents()
     glScissor(0, 0, fb_size.x, fb_size.y);
         
     if (vis_mode == STREAMLINES)
+    {
         createStreamlines();
+    }    
 
     updateInk();
     setColorMapRange();
@@ -83,11 +86,11 @@ void FluidSimulator::draw_contents()
 
     switch (vis_mode)
     {
-    case INK:         drawInk(); break;
-    case STREAMLINES: drawColorMap(streamlines); break;
-    case CURL:        drawColorMap(fluid_solver.curl); break;
-    case PRESSURE:    drawColorMap(fluid_solver.pressure); break;
-    case SPEED:       drawColorMap(fluid_solver.speed); break;
+        case INK:         drawInk(); break;
+        case STREAMLINES: drawColorMap(streamlines); break;
+        case CURL:        drawColorMap(fluid_solver.curl); break;
+        case PRESSURE:    drawColorMap(fluid_solver.pressure); break;
+        case SPEED:       drawColorMap(fluid_solver.speed);
     }
 
     if (arrow_overlay)
@@ -95,7 +98,7 @@ void FluidSimulator::draw_contents()
         drawArrows();
     }
 
-    if (save_next)
+    if (!savename.empty())
     {
         saveRender();
     }
@@ -143,13 +146,15 @@ void FluidSimulator::createStreamlines()
     static float last_trace_time = -1.0f;
 
     float trace_time = cfg->streamline_time / 2.0f;
-    int N = int(cfg->streamline_steps / 2.0f);
+    int N = int(std::round(cfg->streamline_steps / 2.0f) + 0.5f);
 
     if (last_sim_time != sim_time || N != last_N || trace_time != last_trace_time)
     {
+        glm::vec2 world2tx = 1.0f / ((float)cfg->sim_width * glm::vec2(1.0f, fluid_solver.y_aspect));
+
         streamlines->bind();
         streamlines_shader.use();
-        glUniform1f(streamlines_shader.getLocation("inv_dx"), 1.0f / fluid_solver.dx);
+        glUniform2fv(streamlines_shader.getLocation("world2tx"), 1, &world2tx[0]);
         glUniform1i(streamlines_shader.getLocation("N"), N);
         glUniform1f(streamlines_shader.getLocation("trace_time"), trace_time);
         fluid_solver.velocity->bindTexture(0, GL_LINEAR);
@@ -300,7 +305,8 @@ void FluidSimulator::resize()
     }
     fb_size = glm::ivec2(glm::vec2(fb_size) * screen()->pixel_ratio());
 
-    fluid_solver.setSize(glm::vec2(fb_size) / (float)cfg->sim_downscale);
+    glm::ivec2 sim_size = glm::ivec2(glm::round(glm::vec2(fb_size) / (float)cfg->sim_downscale) + 0.5f);
+    fluid_solver.setSize(sim_size);
 
     ink = std::make_unique<FBO>(fb_size, 0.5f);
     streamlines = std::make_unique<FBO>(fb_size);
@@ -320,13 +326,11 @@ void FluidSimulator::resize()
 void FluidSimulator::saveNextRender(const std::string &filename)
 {
     savename = std::filesystem::path(filename).replace_extension(".tga").string();
-    std::cout << savename << std::endl;
-    save_next = true;
 }
 
 void FluidSimulator::saveRender()
 {
-    if (!save_next || savename.empty()) return;
+    if (savename.empty()) return;
 
     struct HeaderTGA
     {
@@ -364,6 +368,5 @@ void FluidSimulator::saveRender()
     image_file.write(reinterpret_cast<char*>(rearranged.data()), rearranged.size() * 3);
     image_file.close();
 
-    save_next = false;
     savename = "";
 }

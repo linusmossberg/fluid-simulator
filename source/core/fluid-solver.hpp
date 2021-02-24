@@ -37,6 +37,7 @@ public:
     const size_t JACOBI_ITERATIONS = 50;
 
     glm::vec2 cell_size;
+    float y_aspect;
 
     std::unique_ptr<FBO> velocity;
     std::unique_ptr<FBO> divergence;

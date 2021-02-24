@@ -4,7 +4,7 @@ inline constexpr char streamlines_frag[] = R"glsl(
 #version 430 core
 #line 5
 
-uniform float inv_dx;
+uniform vec2 world2tx;
 uniform int N;
 uniform float trace_time;
 
@@ -27,11 +27,11 @@ vec2 v(vec2 tx)
 
 vec2 RK4(float dt, vec2 x)
 {
-    vec2 k1 = inv_dx * texture(velocity, x).xy;
-    vec2 k2 = inv_dx * v(x + 0.5 * k1 * dt);
-    vec2 k3 = inv_dx * v(x + 0.5 * k2 * dt);
-    vec2 k4 = inv_dx * v(x + k3 * dt);
-    return x + dt * (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
+    vec2 k1 = v(x);
+    vec2 k2 = v(x + world2tx * 0.5 * k1 * dt);
+    vec2 k3 = v(x + world2tx * 0.5 * k2 * dt);
+    vec2 k4 = v(x + world2tx * k3 * dt);
+    return x + world2tx * dt * (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
 }
 
 void main()

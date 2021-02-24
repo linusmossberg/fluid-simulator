@@ -39,6 +39,9 @@ public:
     bool clear_ink = false;
     bool auto_set_range = true;
     bool tonemap = true;
+    bool arrow_overlay = false;
+    bool fixed_dt = true;
+    bool paused = false;
 
     double last_time = std::numeric_limits<double>::max();
 
@@ -55,12 +58,6 @@ public:
 
     VisMode vis_mode = INK;
 
-    bool arrow_overlay = false;
-
-    bool fixed_dt = true;
-
-    bool paused = false;
-
 private:
     void updateInk();
     void createStreamlines();
@@ -74,11 +71,10 @@ private:
     std::unique_ptr<FBO> ink;
     std::unique_ptr<FBO> streamlines;
     std::unique_ptr<FBO> temp_fbo;
-    Texture2D noise;
 
+    Texture2D noise;
     Texture1D transfer_function;
 
     void saveRender();
-    bool save_next = false;
     std::string savename = "";
 };

@@ -58,8 +58,10 @@ void FluidSolver::advect(std::unique_ptr<FBO>& quantity, std::unique_ptr<FBO>& t
 
     advect_shader.use();
 
-    glUniform1f(advect_shader.getLocation("inv_dx"), 1.0f / dx);
     glUniform1f(advect_shader.getLocation("dt"), cfg->dt);
+
+    glm::vec2 world2tx = 1.0f / ((float)cfg->sim_width * glm::vec2(1.0f, y_aspect));
+    glUniform2fv(advect_shader.getLocation("world2tx"), 1, &world2tx[0]);
 
     velocity->bindTexture(0, GL_LINEAR);
     quantity->bindTexture(1, GL_LINEAR);
@@ -244,6 +246,8 @@ void FluidSolver::setSize(const glm::ivec2& grid_cells_)
     grid_cells = grid_cells_;
 
     cell_size = 1.0f / glm::vec2(grid_cells);
+
+    y_aspect = grid_cells.y / (float)grid_cells.x;
 
     for (auto& fbo : { &temp_fbo, &velocity, &pressure, &divergence, &curl, &speed })
     {
