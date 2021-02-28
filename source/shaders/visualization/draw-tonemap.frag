@@ -4,7 +4,7 @@ inline constexpr char draw_tonemap_frag[] = R"glsl(
 #version 430 core
 #line 5
 
-in vec2 TX_C;
+in vec2 C;
 
 layout(binding = 0) uniform sampler2D image;
 
@@ -46,5 +46,5 @@ void main()
 {
     // Another alternative to gamme expanding is to maintain gamma expanded ink, but ink mixing with 
     // ink that can be both subtractive and additive seems to work better in gamma compressed space.
-    color.xyz = srgbGammaCompress(ACESFilm(exposure * srgbGammaExpand(texture(image, TX_C).xyz)));
+    color.xyz = srgbGammaCompress(ACESFilm(exposure * srgbGammaExpand(texture(image, C).xyz)));
 })glsl";

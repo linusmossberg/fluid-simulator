@@ -7,10 +7,10 @@ inline constexpr char screen_vert[] = R"glsl(
 layout (location = 0) in vec2 position;
 layout (location = 1) in vec2 texcoord;
 
-out vec2 TX_C;
+out vec2 C;
 
 void main()
 {
-    TX_C = texcoord;
-    gl_Position = vec4(position * 2.0, 0.0, 1.0);
+    C = texcoord;
+    gl_Position = vec4(position, 0.0, 1.0);
 })glsl";

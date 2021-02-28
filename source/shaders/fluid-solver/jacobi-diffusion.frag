@@ -11,11 +11,7 @@ layout(binding = 1) uniform sampler2D old_velocity;
 
 out vec4 color;
 
-in vec2 TX_C;
-in vec2 TX_L;
-in vec2 TX_R;
-in vec2 TX_T;
-in vec2 TX_B;
+in vec2 C, L, R, T, B;
 
 vec2 v(vec2 tx)
 {
@@ -29,6 +25,6 @@ vec2 v(vec2 tx)
 
 void main()
 {
-    vec2 v0 = texture(old_velocity, TX_C).xy;
-    color.xy = (v(TX_L) + v(TX_T) + v(TX_R) + v(TX_B) + dx2_nudt * v0) / (4.0 + dx2_nudt);
+    vec2 v0 = texture(old_velocity, C).xy;
+    color.xy = (v(L) + v(T) + v(R) + v(B) + dx2_nudt * v0) / (4.0 + dx2_nudt);
 })glsl";

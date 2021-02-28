@@ -6,11 +6,11 @@ inline constexpr char ink_image_frag[] = R"glsl(
 
 layout(binding = 0) uniform sampler2D image;
 
-in vec2 TX_C;
+in vec2 C;
 
 out vec4 ink;
 
 void main()
 {
-    ink = texture(image, TX_C);
+    ink = texture(image, C);
 })glsl";

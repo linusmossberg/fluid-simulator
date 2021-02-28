@@ -11,7 +11,7 @@ uniform vec2 tx_size;
 
 layout(binding = 0) uniform sampler2D ink;
 
-in vec2 TX_C;
+in vec2 C;
 
 out vec4 new_ink;
 
@@ -21,13 +21,13 @@ void main()
 {
     vec2 aspect = vec2(1.0, tx_size.x / tx_size.y) * 256.0;
 
-    vec2 d = (TX_C - pos) * aspect;
+    vec2 d = (C - pos) * aspect;
 
-    const float radius = 2.0; // 2
+    const float radius = 2.0;
     const float falloff_integral = PI / radius;
 
     float falloff = exp(-dot(d,d) / radius);
-    vec4 old_ink = texture(ink, TX_C);
+    vec4 old_ink = texture(ink, C);
 
     new_ink = (old_ink + dt * (falloff / falloff_integral) * vec4(color, 1.0));
 })glsl";

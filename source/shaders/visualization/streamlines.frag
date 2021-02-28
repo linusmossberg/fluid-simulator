@@ -11,7 +11,7 @@ uniform float trace_time;
 layout(binding = 0) uniform sampler2D velocity;
 layout(binding = 1) uniform sampler2D noise;
 
-in vec2 TX_C;
+in vec2 C;
 
 out vec4 color;
 
@@ -38,10 +38,10 @@ void main()
 {
     float dt = trace_time / N;
 
-    float avg_noise = texture(noise, TX_C).x;
+    float avg_noise = texture(noise, C).x;
 
     // Forward integrate
-    vec2 x = TX_C;
+    vec2 x = C;
     for(int i = 0; i < N; i++)
     {
         x = RK4(dt, x);
@@ -49,7 +49,7 @@ void main()
     }
 
     // Backward integrate
-    x = TX_C;
+    x = C;
     for(int i = 0; i < N; i++)
     {
         x = RK4(-dt, x);

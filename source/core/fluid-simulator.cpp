@@ -7,13 +7,11 @@
 #include <random>
 
 #include <nanogui/nanogui.h>
-
 #include <nanogui/opengl.h>
 
 #include <glm/gtx/color_space.hpp>
 
 #include "../shaders/screen.vert"
-
 #include "../shaders/visualization/draw-tonemap.frag"
 #include "../shaders/visualization/draw.frag"
 #include "../shaders/visualization/add-ink.frag"
@@ -43,12 +41,12 @@ void FluidSimulator::draw_contents()
 {
     double time = glfwGetTime();
 
-    if (!fixed_dt && time > last_time)
-    {
-        cfg->dt = float(time - last_time);
-    }
+    float dt = float(time - last_time);
 
-    last_time = time;
+    if (!fixed_dt && dt > 0.0f)
+    {
+        cfg->dt = dt;
+    }
 
     int prev_viewport[4], prev_scissor[4];
     glGetIntegerv(GL_VIEWPORT, prev_viewport);
@@ -56,8 +54,9 @@ void FluidSimulator::draw_contents()
 
     Quad::bind();
 
-    if (!paused)
+    if (!paused && (dt <= 0.0f || dt >= cfg->dt))
     {
+        last_time = time;
         fluid_solver.force_pos = mouse_pos;
         fluid_solver.step();
         sim_time += cfg->dt;
@@ -141,12 +140,11 @@ void FluidSimulator::updateInk()
 void FluidSimulator::createStreamlines()
 {
     static const Shader streamlines_shader(screen_vert, streamlines_frag, "streamlines");
-    static float last_sim_time = -1.0f;
+    static float last_sim_time = -1.0f, last_trace_time = -1.0f;
     static int last_N = -1;
-    static float last_trace_time = -1.0f;
 
-    float trace_time = cfg->streamline_time / 2.0f;
-    int N = int(std::round(cfg->streamline_steps / 2.0f) + 0.5f);
+    float trace_time = cfg->streamline_time * 0.5f;
+    int N = int(std::round(cfg->streamline_steps * 0.5f) + 0.5f);
 
     if (last_sim_time != sim_time || N != last_N || trace_time != last_trace_time)
     {
@@ -180,8 +178,8 @@ void FluidSimulator::drawArrows()
     glUniform2fv(arrow_shader.getLocation("scale"), 1, &scale[0]);
     glUniform4fv(arrow_shader.getLocation("arrow_color"), 1, &arrow_color[0]);
 
-    int cols = (int)cfg->arrow_cols;
-    int rows = std::round((fb_size.y / (float)fb_size.x) * cols) + 0.5f;
+    int cols = (int)(std::round(cfg->arrow_cols) + 0.5f);
+    int rows = (int)(std::round((fb_size.y / (float)fb_size.x) * cols) + 0.5f);
 
     for (int x = 0; x < cols; x++)
     {

@@ -43,11 +43,11 @@ void Texture2D::loadImage(const std::filesystem::path& path) const
     int pixel_format;
     switch (channels)
     {
-    case 1: pixel_format = GL_RED; break;
-    case 2: pixel_format = GL_RG; break;
-    case 3: pixel_format = GL_RGB; break;
-    case 4: pixel_format = GL_RGBA; break;
-    default: stbi_image_free(image_data); throw std::runtime_error("Unable to load " + path.string());
+        case 1: pixel_format = GL_RED; break;
+        case 2: pixel_format = GL_RG; break;
+        case 3: pixel_format = GL_RGB; break;
+        case 4: pixel_format = GL_RGBA; break;
+        default: stbi_image_free(image_data); throw std::runtime_error("Unable to load " + path.string());
     }
 
     glBindTexture(GL_TEXTURE_2D, handle);

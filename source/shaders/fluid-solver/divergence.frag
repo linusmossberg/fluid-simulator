@@ -10,10 +10,7 @@ layout(binding = 0) uniform sampler2D velocity;
 
 out vec4 divergence;
 
-in vec2 TX_L;
-in vec2 TX_R;
-in vec2 TX_T;
-in vec2 TX_B;
+in vec2 L, R, T, B;
 
 vec2 v(vec2 tx)
 {
@@ -27,5 +24,5 @@ vec2 v(vec2 tx)
 
 void main()
 {
-    divergence.x = half_inv_dx * (v(TX_R).x - v(TX_L).x + v(TX_T).y - v(TX_B).y);
+    divergence.x = half_inv_dx * (v(R).x - v(L).x + v(T).y - v(B).y);
 })glsl";

@@ -11,18 +11,14 @@ layout(binding = 1) uniform sampler2D velocity;
 
 out vec4 new_velocity;
 
-in vec2 TX_C;
-in vec2 TX_L;
-in vec2 TX_R;
-in vec2 TX_T;
-in vec2 TX_B;
+in vec2 C, L, R, T, B;
 
 #define p(TX) texture(pressure, TX).x
 
 void main()
 {
-    vec2 v = texture(velocity, TX_C).xy;
-    vec2 pressure_gradient = half_inv_dx * vec2(p(TX_R) - p(TX_L), p(TX_T) - p(TX_B));
+    vec2 v = texture(velocity, C).xy;
+    vec2 pressure_gradient = half_inv_dx * vec2(p(R) - p(L), p(T) - p(B));
 
     new_velocity.xy = v - pressure_gradient;
 })glsl";

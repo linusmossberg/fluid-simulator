@@ -10,10 +10,7 @@ layout(binding = 0) uniform sampler2D velocity;
 
 out vec4 curl;
 
-in vec2 TX_L;
-in vec2 TX_R;
-in vec2 TX_T;
-in vec2 TX_B;
+in vec2 L, R, T, B;
 
 vec2 v(vec2 tx)
 {
@@ -27,5 +24,5 @@ vec2 v(vec2 tx)
 
 void main()
 {
-    curl.x = half_inv_dx * (v(TX_R).y - v(TX_L).y - v(TX_T).x + v(TX_B).x);
+    curl.x = half_inv_dx * (v(R).y - v(L).y - v(T).x + v(B).x);
 })glsl";

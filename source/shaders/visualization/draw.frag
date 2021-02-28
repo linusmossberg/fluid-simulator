@@ -4,7 +4,7 @@ inline constexpr char draw_frag[] = R"glsl(
 #version 430 core
 #line 5
 
-in vec2 TX_C;
+in vec2 C;
 
 layout(binding = 0) uniform sampler2D image;
 
@@ -32,5 +32,5 @@ vec3 srgbGammaExpand(vec3 c)
 
 void main()
 {
-    color.xyz = srgbGammaCompress(exposure * srgbGammaExpand(texture(image, TX_C).xyz));
+    color.xyz = srgbGammaCompress(exposure * srgbGammaExpand(texture(image, C).xyz));
 })glsl";
