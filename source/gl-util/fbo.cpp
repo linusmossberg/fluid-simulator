@@ -67,13 +67,10 @@ void FBO::bindTexture(int binding, int interpolation) const
 
 std::pair<glm::vec4, glm::vec4> FBO::minMax() const
 {
-    glViewport(0, 0, size.x, size.y);
-    glScissor(0, 0, size.x, size.y);
-
-    bind();
+    glBindTexture(GL_TEXTURE_2D, texture);
 
     std::vector<glm::vec4> data(size.x * size.y, glm::vec4(0.0));
-    glReadPixels(0, 0, size.x, size.y, GL_RGBA, GL_FLOAT, data.data());
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, data.data());
 
     glm::vec4 min_v(std::numeric_limits<float>::max());
     glm::vec4 max_v(std::numeric_limits<float>::lowest());
