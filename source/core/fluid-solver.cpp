@@ -88,19 +88,19 @@ void FluidSolver::diffuseVelocity()
     glUniform2fv(jacobi_diffusion_shader.getLocation("tx_size"), 1, &cell_size[0]);
     glUniform1f(jacobi_diffusion_shader.getLocation("dx2_nudt"), dx2_nudt);
 
+    temp_fbo2->bind();
+    velocity->bindTexture(0);
     velocity->bindTexture(1);
+    Quad::draw();
 
-    for (int i = 0; i < cfg->viscosity_iterations; i++)
+    for (int i = 0; i < cfg->viscosity_iterations - 1.0f; i++)
     {
         temp_fbo->bind();
-
-        velocity->bindTexture(0);
-
+        temp_fbo2->bindTexture(0);
         Quad::draw();
-
-        std::swap(velocity, temp_fbo);
+        std::swap(temp_fbo2, temp_fbo);
     }
-    std::swap(velocity, temp_fbo);
+    std::swap(velocity, temp_fbo2);
 }
 
 void FluidSolver::applyForce()
@@ -200,14 +200,10 @@ void FluidSolver::computePressure()
     for (int i = 0; i < cfg->pressure_iterations; i++)
     {
         temp_fbo->bind();
-
         pressure->bindTexture(0);
-
         Quad::draw();
-
         std::swap(temp_fbo, pressure);
     }
-    std::swap(temp_fbo, pressure);
 }
 
 void FluidSolver::subtractPressureGradient() 
@@ -249,7 +245,7 @@ void FluidSolver::setSize(const glm::ivec2& grid_cells_)
 
     y_aspect = grid_cells.y / (float)grid_cells.x;
 
-    for (auto& fbo : { &temp_fbo, &velocity, &pressure, &divergence, &curl, &speed })
+    for (auto& fbo : { &temp_fbo, &temp_fbo2, &velocity, &pressure, &divergence, &curl, &speed })
     {
         *fbo = std::make_unique<FBO>(grid_cells);
     }

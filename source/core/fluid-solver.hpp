@@ -32,7 +32,7 @@ public:
     bool clear_pressure = false;
     bool clear_velocity = false;
     glm::ivec2 grid_cells;
-    glm::vec2 force_pos = glm::vec2(0.5, 0.5);
+    glm::vec2 force_pos = glm::vec2(0.05, 0.5);
     float dx = 1.0f;
     const size_t JACOBI_ITERATIONS = 50;
 
@@ -44,5 +44,5 @@ public:
     std::unique_ptr<FBO> curl;
     std::unique_ptr<FBO> pressure;
     std::unique_ptr<FBO> speed;
-    std::unique_ptr<FBO> temp_fbo;
+    std::unique_ptr<FBO> temp_fbo, temp_fbo2;
 };

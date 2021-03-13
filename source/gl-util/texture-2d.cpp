@@ -40,18 +40,19 @@ void Texture2D::loadImage(const std::filesystem::path& path) const
         throw std::runtime_error("Unable to load " + path.string());
     }
 
-    int pixel_format;
+    int format, internal_format;
     switch (channels)
     {
-        case 1: pixel_format = GL_RED; break;
-        case 2: pixel_format = GL_RG; break;
-        case 3: pixel_format = GL_RGB; break;
-        case 4: pixel_format = GL_RGBA; break;
-        default: stbi_image_free(image_data); throw std::runtime_error("Unable to load " + path.string());
+    case 1: format = GL_RED;  internal_format = GL_R8; break;
+    case 2: format = GL_RG;   internal_format = GL_RG8; break;
+    case 3: format = GL_RGB;  internal_format = GL_RGB8; break;
+    case 4: format = GL_RGBA; internal_format = GL_RGBA8; break;
+    default: stbi_image_free(image_data); throw std::runtime_error("Unable to load " + path.string());
     }
 
     glBindTexture(GL_TEXTURE_2D, handle);
-    glTexImage2D(GL_TEXTURE_2D, 0, pixel_format, width, height, 0, pixel_format, GL_UNSIGNED_BYTE, image_data);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, GL_UNSIGNED_BYTE, image_data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(image_data);

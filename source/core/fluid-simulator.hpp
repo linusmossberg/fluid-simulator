@@ -42,6 +42,7 @@ public:
     bool arrow_overlay = false;
     bool fixed_dt = true;
     bool paused = false;
+    bool limit = true;
 
     double last_time = std::numeric_limits<double>::max();
 

@@ -54,7 +54,7 @@ void FluidSimulator::draw_contents()
 
     Quad::bind();
 
-    if (!paused && (dt <= 0.0f || dt >= cfg->dt))
+    if (!paused && (dt <= 0.0f || (!limit || dt >= cfg->dt)))
     {
         last_time = time;
         fluid_solver.force_pos = mouse_pos;
@@ -71,7 +71,6 @@ void FluidSimulator::draw_contents()
     }    
 
     updateInk();
-    setColorMapRange();
 
     if (!ink_image_path.empty())
     {
@@ -196,6 +195,8 @@ void FluidSimulator::drawArrows()
 void FluidSimulator::drawColorMap(const std::unique_ptr<FBO>& scalar_field)
 {
     static const Shader color_map_shader(screen_vert, color_map_frag, "color-map");
+
+    setColorMapRange();
 
     color_map_shader.use();
 

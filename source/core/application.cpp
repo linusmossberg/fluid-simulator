@@ -97,29 +97,38 @@ Application::Application() :
     );
 
     panel = new nanogui::Widget(window);
-    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 4, nanogui::Alignment::Fill));
+    panel->set_layout(new nanogui::GridLayout(nanogui::Orientation::Horizontal, 5, nanogui::Alignment::Fill));
     label = new nanogui::Label(panel, "Time Step", "sans-bold");
     label->set_fixed_width(86);
 
     float_box_rows.push_back(PropertyBoxRow(panel, { &cfg->dt }, "", "s", 6, 0.001f, "", 90));
 
-    b = new nanogui::Button(panel, "Realtime");
+    b = new nanogui::Button(panel, "Dynamic");
     b->set_flags(nanogui::Button::Flags::ToggleButton);
     b->set_pushed(!fluid_simulator->fixed_dt);
-    b->set_fixed_size({ 90, 20 });
+    b->set_fixed_size({ 60, 20 });
     b->set_font_size(16);
     b->set_change_callback([this](bool state) { fluid_simulator->fixed_dt = !state; });
+    b->set_tooltip("Dynamically set time step to match physical time.");
+
+    b = new nanogui::Button(panel, "Limit");
+    b->set_flags(nanogui::Button::Flags::ToggleButton);
+    b->set_pushed(fluid_simulator->limit);
+    b->set_fixed_size({ 60, 20 });
+    b->set_font_size(16);
+    b->set_change_callback([this](bool state) { fluid_simulator->limit = state; });
+    b->set_tooltip("Use time step as lower bound to not update faster than real-time.");
 
     b = new nanogui::Button(panel, "Paused");
     b->set_flags(nanogui::Button::Flags::ToggleButton);
     b->set_pushed(fluid_simulator->paused);
-    b->set_fixed_size({ 90, 20 });
+    b->set_fixed_size({ 60, 20 });
     b->set_font_size(16);
     b->set_change_callback([this](bool state) { fluid_simulator->paused = state; });
 
     sliders.emplace_back(window, &cfg->mu, "Viscosity", "cP", 2);
     sliders.emplace_back(window, &cfg->rho, "Density", "kg/L", 2);
-    sliders.emplace_back(window, &cfg->vorticity, "Vorticity", "N", 2);
+    sliders.emplace_back(window, &cfg->vorticity, "Vorticity", "", 2);
     sliders.emplace_back(window, &cfg->sim_width, "Domain Width", "m", 1);
     sliders.emplace_back(window, &cfg->F, "Force", "N", 2);
     sliders.emplace_back(window, &cfg->F_angle, "Force Angle", "", 0);

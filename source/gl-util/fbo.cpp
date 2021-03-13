@@ -79,12 +79,12 @@ std::pair<glm::vec4, glm::vec4> FBO::minMax() const
     {
         for (int x = 0; x < size.x; x++)
         {
+            const auto& p = data[((size_t)size.y - 1 - y) * size.x + x];
+
             for (int c = 0; c < 4; c++)
             {
-                float v = data[y * size.y + x][c];
-
-                if (v < min_v[c]) min_v[c] = v;
-                if (v > max_v[c]) max_v[c] = v;
+                if (p[c] < min_v[c]) min_v[c] = p[c];
+                if (p[c] > max_v[c]) max_v[c] = p[c];
             }
         }
     }
