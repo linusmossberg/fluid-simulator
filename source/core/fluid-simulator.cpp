@@ -119,8 +119,8 @@ void FluidSimulator::updateInk()
         temp_fbo->bind();
         add_ink_shader.use();
         ink->bindTexture(0);
-        float scale = ((std::cosf(sim_time) * 0.5f) + 1.0f) * 300.0f * cfg->ink_rate;
-        glm::vec3 hsv = glm::vec3(std::fmod(sim_time * 10.0f, 360.0f), 0.5f, scale * -std::cosf(sim_time * 0.075f));
+        float scale = ((std::cos(sim_time) * 0.5f) + 1.0f) * 300.0f * cfg->ink_rate;
+        glm::vec3 hsv = glm::vec3(std::fmod(sim_time * 10.0f, 360.0f), 0.5f, scale * -std::cos(sim_time * 0.075f));
         glm::vec3 rgb = glm::rgbColor(hsv);
         glUniform2fv(add_ink_shader.getLocation("tx_size"), 1, &fluid_solver.cell_size[0]);
         glUniform3fv(add_ink_shader.getLocation("color"), 1, &rgb[0]);
@@ -218,12 +218,12 @@ void FluidSimulator::drawInk()
     if (tonemap)
     {
         draw_tonemap_shader.use();
-        glUniform1f(draw_tonemap_shader.getLocation("exposure"), std::powf(2.0f, cfg->ink_exposure));
+        glUniform1f(draw_tonemap_shader.getLocation("exposure"), std::pow(2.0f, cfg->ink_exposure));
     }  
     else
     {
         draw_shader.use();
-        glUniform1f(draw_shader.getLocation("exposure"), std::powf(2.0f, cfg->ink_exposure));
+        glUniform1f(draw_shader.getLocation("exposure"), std::pow(2.0f, cfg->ink_exposure));
     }
 
     ink->bindTexture(0);

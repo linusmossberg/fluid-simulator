@@ -1,3 +1,5 @@
+#include <memory>
+
 #include <nanogui/nanogui.h>
 
 #include "config.hpp"
@@ -21,7 +23,6 @@ private:
                        const std::string &unit, size_t precision);
 
         nanogui::Slider* slider;
-        //nanogui::TextBox* text_box;
         nanogui::FloatBox<float>* float_box;
         Config::Property* const prop;
 

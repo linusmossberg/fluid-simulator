@@ -83,7 +83,7 @@ void FluidSolver::diffuseVelocity()
 
     jacobi_diffusion_shader.use();
 
-    float dx2_nudt = std::powf(dx, 2) / (nu * cfg->dt);
+    float dx2_nudt = std::pow(dx, 2) / (nu * cfg->dt);
 
     glUniform2fv(jacobi_diffusion_shader.getLocation("tx_size"), 1, &cell_size[0]);
     glUniform1f(jacobi_diffusion_shader.getLocation("dx2_nudt"), dx2_nudt);
@@ -193,7 +193,7 @@ void FluidSolver::computePressure()
     jacobi_pressure_shader.use();
 
     glUniform2fv(jacobi_pressure_shader.getLocation("tx_size"), 1, &cell_size[0]);
-    glUniform1f(jacobi_pressure_shader.getLocation("dx2"), std::powf(dx, 2));
+    glUniform1f(jacobi_pressure_shader.getLocation("dx2"), std::pow(dx, 2));
 
     divergence->bindTexture(1);
 
