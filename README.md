@@ -1,6 +1,6 @@
 # Fluid Simulator
 
-<img src="https://user-images.githubusercontent.com/15798094/111071530-e1bc1680-84d6-11eb-8408-0e916b919a80.gif" width="100%"/>
+<img src="https://user-images.githubusercontent.com/15798094/111071530-e1bc1680-84d6-11eb-8408-0e916b919a80.gif" width="100%" title="Left to right, top to bottom: Ink, streamlines, speed and arrows, pressure, curl." alt="Left to right, top to bottom: Ink, streamlines, speed and arrows, pressure, curl."/>
 
 ## Building
 
@@ -8,7 +8,7 @@ Start by cloning the program and all submodules using the following command:
 <pre><code>git clone <b>--recursive</b> https://github.com/linusmossberg/fluid-simulator</code></pre>
 Build files can then be generated with [CMake](https://cmake.org/) using:
 ```sh
-cd light-field-renderer
+cd fluid-simulator
 mkdir build
 cd build
 cmake ..
