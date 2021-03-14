@@ -7,6 +7,7 @@ inline constexpr char streamlines_frag[] = R"glsl(
 uniform vec2 world2tx;
 uniform int N;
 uniform float trace_time;
+uniform float max_speed;
 
 layout(binding = 0) uniform sampler2D velocity;
 layout(binding = 1) uniform sampler2D noise;
@@ -58,9 +59,12 @@ void main()
 
     avg_noise /= (2.0 * N + 1.0);
 
+    // Scale factor based on speed
+    float f = clamp(pow(smoothstep(0.0, max_speed, length(v(C))) * 10, 0.25), 0, 1);
+
     // Apply contrast
-    const float contrast = 4.0;
+    const float contrast = 6.0;
     avg_noise = ((avg_noise - 0.5) * contrast) + 0.5;
 
-    color = vec4(clamp(avg_noise, 0.0, 1.0));
+    color = vec4(clamp(avg_noise * f, 0.0, 1.0));
 })glsl";

@@ -149,11 +149,14 @@ void FluidSimulator::createStreamlines()
     {
         glm::vec2 world2tx = 1.0f / ((float)cfg->sim_width * glm::vec2(1.0f, fluid_solver.y_aspect));
 
+        float max_speed = fluid_solver.speed->minMax().second.x;
+
         streamlines->bind();
         streamlines_shader.use();
         glUniform2fv(streamlines_shader.getLocation("world2tx"), 1, &world2tx[0]);
         glUniform1i(streamlines_shader.getLocation("N"), N);
         glUniform1f(streamlines_shader.getLocation("trace_time"), trace_time);
+        glUniform1f(streamlines_shader.getLocation("max_speed"), max_speed);
         fluid_solver.velocity->bindTexture(0, GL_LINEAR);
         noise.bind(1);
         Quad::draw();
